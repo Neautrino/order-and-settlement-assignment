@@ -1,3 +1,5 @@
+import { apiClient } from './api.client';
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -11,19 +13,10 @@ export interface AuthResponse {
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch('/api/auth/login', {
+  const data = await apiClient<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ email, password }),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || data.message || 'Invalid email or password');
-  }
 
   if (data.token) {
     localStorage.setItem('auth_token', data.token);
@@ -34,19 +27,10 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 }
 
 export async function registerUser(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch('/api/auth/register', {
+  const data = await apiClient<AuthResponse>('/api/auth/register', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ email, password }),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || data.message || 'Registration failed');
-  }
 
   if (data.token) {
     localStorage.setItem('auth_token', data.token);

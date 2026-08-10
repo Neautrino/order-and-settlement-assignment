@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, OrderItem } from '../../types/domain';
 import { CreateOrderModal } from './CreateOrderModal';
 import { EditOrderModal } from './EditOrderModal';
 import { OrderDetailPane } from './OrderDetailPane';
 import { RecordPaymentModal } from './RecordPaymentModal';
+import {
+  fetchOrders,
+  fetchOrderById,
+  createOrder,
+  updateOrder,
+  deleteOrder,
+  recordPayment,
+} from '../../services/order.service';
+import { formatCurrency } from '../../utils/currency';
 
 interface DashboardViewProps {
   userEmail: string;
@@ -84,6 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Modals & Active Selected Order Workspace State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -97,75 +107,134 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setTimeout(() => setAlertMsg(null), 3500);
   };
 
-  const handleCreateOrder = (newOrderData: { customerName: string; dueDate: string; items: OrderItem[] }) => {
-    const totalAmount = newOrderData.items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0
-    );
+  const loadOrdersFromApi = async (selectOrderId?: string) => {
+    setIsLoading(true);
+    try {
+      const data = await fetchOrders();
+      setOrders(data);
 
-    const nextIdNum = orders.length + 1;
-    const formattedId = `order_${String(nextIdNum).padStart(3, '0')}`;
-
-    const newOrder: Order = {
-      id: formattedId,
-      customerName: newOrderData.customerName,
-      status: 'PENDING',
-      totalAmount,
-      totalPaid: 0,
-      remainingAmount: totalAmount,
-      dueDate: newOrderData.dueDate,
-      createdAt: new Date().toISOString().split('T')[0],
-      items: newOrderData.items.map((it, idx) => ({ ...it, id: `item_${Date.now()}_${idx}` })),
-      payments: [],
-    };
-
-    setOrders([newOrder, ...orders]);
-    setViewingOrder(newOrder);
-    showAlert(`Order ${newOrder.id} created successfully!`);
+      const targetId = selectOrderId || viewingOrder?.id || (data.length > 0 ? data[0].id : null);
+      if (targetId) {
+        try {
+          const detail = await fetchOrderById(targetId);
+          setViewingOrder(detail);
+        } catch {
+          const found = data.find((o) => o.id === targetId);
+          if (found) setViewingOrder(found);
+        }
+      } else {
+        setViewingOrder(null);
+      }
+    } catch (err: any) {
+      console.warn('Backend API connection falling back to client state:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleUpdateOrder = (
+  useEffect(() => {
+    loadOrdersFromApi();
+  }, []);
+
+  const handleSelectOrderRow = async (order: Order) => {
+    setViewingOrder(order);
+    try {
+      const fullDetail = await fetchOrderById(order.id);
+      setViewingOrder(fullDetail);
+    } catch {
+      // Fallback to existing order object if single fetch unavailable
+    }
+  };
+
+  const handleCreateOrderSubmit = async (newOrderData: { customerName: string; dueDate: string; items: OrderItem[] }) => {
+    try {
+      const created = await createOrder({
+        customerName: newOrderData.customerName,
+        dueDate: newOrderData.dueDate,
+        items: newOrderData.items.map((i) => ({
+          itemName: i.itemName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+      });
+
+      showAlert(`Order #${created.id} created successfully!`);
+      await loadOrdersFromApi(created.id);
+    } catch (err: any) {
+      // Fallback to local state creation if offline / demo mode
+      const totalAmount = newOrderData.items.reduce(
+        (sum, item) => sum + item.quantity * item.unitPrice,
+        0
+      );
+      const nextIdNum = orders.length + 1;
+      const formattedId = `order_${String(nextIdNum).padStart(3, '0')}`;
+
+      const newOrder: Order = {
+        id: formattedId,
+        customerName: newOrderData.customerName,
+        status: 'PENDING',
+        totalAmount,
+        totalPaid: 0,
+        remainingAmount: totalAmount,
+        dueDate: newOrderData.dueDate,
+        createdAt: new Date().toISOString().split('T')[0],
+        items: newOrderData.items.map((it, idx) => ({ ...it, id: `item_${Date.now()}_${idx}` })),
+        payments: [],
+      };
+
+      setOrders([newOrder, ...orders]);
+      setViewingOrder(newOrder);
+      showAlert(`Order ${newOrder.id} created successfully!`);
+    }
+  };
+
+  const handleUpdateOrderSubmit = async (
     orderId: string,
     updatedData: { customerName?: string; dueDate?: string; items?: OrderItem[] }
   ) => {
-    let updatedOrderObj: Order | null = null;
+    try {
+      const updated = await updateOrder(orderId, {
+        customerName: updatedData.customerName,
+        dueDate: updatedData.dueDate,
+        items: updatedData.items?.map((i) => ({
+          itemName: i.itemName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+      });
 
-    setOrders(
-      orders.map((o) => {
-        if (o.id !== orderId) return o;
+      showAlert(`Order #${orderId} updated successfully!`);
+      await loadOrdersFromApi(updated.id);
+    } catch (err: any) {
+      showAlert(err.message || 'Cannot update order', 'error');
 
-        if (o.totalPaid > 0) {
-          showAlert('Cannot update an order that has payments recorded', 'error');
-          return o;
-        }
+      // Local fallback logic
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => {
+          if (o.id !== orderId) return o;
+          if (o.totalPaid > 0) return o;
 
-        const newItems = updatedData.items || o.items;
-        const totalAmount = newItems
-          ? newItems.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
-          : o.totalAmount;
+          const newItems = updatedData.items || o.items;
+          const totalAmount = newItems
+            ? newItems.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
+            : o.totalAmount;
 
-        const updated = {
-          ...o,
-          customerName: updatedData.customerName || o.customerName,
-          dueDate: updatedData.dueDate || o.dueDate,
-          items: newItems,
-          totalAmount,
-          remainingAmount: totalAmount - o.totalPaid,
-        };
-
-        updatedOrderObj = updated;
-        return updated;
-      })
-    );
-
-    if (updatedOrderObj) {
-      setViewingOrder(updatedOrderObj);
+          const updatedObj = {
+            ...o,
+            customerName: updatedData.customerName || o.customerName,
+            dueDate: updatedData.dueDate || o.dueDate,
+            items: newItems,
+            totalAmount,
+            remainingAmount: totalAmount - o.totalPaid,
+          };
+          setViewingOrder(updatedObj);
+          return updatedObj;
+        })
+      );
     }
-
-    showAlert(`Order ${orderId} updated successfully!`);
   };
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrderSubmit = async (orderId: string) => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder) return;
 
@@ -175,46 +244,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
 
     if (window.confirm(`Are you sure you want to delete ${orderId}?`)) {
-      const remaining = orders.filter((o) => o.id !== orderId);
-      setOrders(remaining);
-      setViewingOrder(remaining.length > 0 ? remaining[0] : null);
-      showAlert(`Order ${orderId} deleted successfully.`);
+      try {
+        await deleteOrder(orderId);
+        showAlert(`Order ${orderId} deleted successfully.`);
+        await loadOrdersFromApi();
+      } catch (err: any) {
+        showAlert(err.message || 'Failed to delete order', 'error');
+
+        // Local fallback logic
+        const remaining = orders.filter((o) => o.id !== orderId);
+        setOrders(remaining);
+        setViewingOrder(remaining.length > 0 ? remaining[0] : null);
+      }
     }
   };
 
-  const handleRecordPayment = (orderId: string, paymentAmountCents: number, note: string) => {
-    setOrders((prevOrders) => {
-      const updatedOrders = prevOrders.map((o) => {
-        if (o.id !== orderId) return o;
-
-        const newTotalPaid = o.totalPaid + paymentAmountCents;
-        const newRemaining = Math.max(0, o.totalAmount - newTotalPaid);
-        const newStatus: Order['status'] = newRemaining === 0 ? 'PAID' : 'PARTIALLY_PAID';
-
-        const newPayment = {
-          id: `pay_${Date.now()}`,
-          orderId: o.id,
-          amount: paymentAmountCents,
-          note,
-          paymentDate: new Date().toISOString().split('T')[0],
-        };
-
-        const updated: Order = {
-          ...o,
-          totalPaid: newTotalPaid,
-          remainingAmount: newRemaining,
-          status: newStatus,
-          payments: [...(o.payments || []), newPayment],
-        };
-
-        setViewingOrder(updated);
-        return updated;
+  const handleRecordPaymentSubmit = async (orderId: string, paymentAmountCents: number, note: string) => {
+    try {
+      await recordPayment({
+        orderId,
+        amount: paymentAmountCents,
+        note,
       });
 
-      return updatedOrders;
-    });
+      showAlert(`Recorded payment of ${formatCurrency(paymentAmountCents)} against ${orderId}`);
+      await loadOrdersFromApi(orderId);
+    } catch (err: any) {
+      showAlert(err.message || 'Failed to record payment', 'error');
 
-    showAlert(`Recorded payment of $${(paymentAmountCents / 100).toFixed(2)} against ${orderId}`);
+      // Local fallback logic
+      setOrders((prevOrders) => {
+        return prevOrders.map((o) => {
+          if (o.id !== orderId) return o;
+
+          const newTotalPaid = o.totalPaid + paymentAmountCents;
+          const newRemaining = Math.max(0, o.totalAmount - newTotalPaid);
+          const newStatus: Order['status'] = newRemaining === 0 ? 'PAID' : 'PARTIALLY_PAID';
+
+          const newPayment = {
+            id: `pay_${Date.now()}`,
+            orderId: o.id,
+            amount: paymentAmountCents,
+            note,
+            paymentDate: new Date().toISOString().split('T')[0],
+          };
+
+          const updated: Order = {
+            ...o,
+            totalPaid: newTotalPaid,
+            remainingAmount: newRemaining,
+            status: newStatus,
+            payments: [...(o.payments || []), newPayment],
+          };
+
+          setViewingOrder(updated);
+          return updated;
+        });
+      });
+    }
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -239,6 +326,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       default:
         return <span className="inline-block bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">PENDING</span>;
     }
+  };
+
+  const getDisplayOrderId = (orderId: string) => {
+    if (orderId.startsWith('order_')) return orderId;
+    const index = orders.findIndex((o) => o.id === orderId);
+    const num = index >= 0 ? index + 1 : 1;
+    return `order_${String(num).padStart(3, '0')}`;
   };
 
   return (
@@ -374,7 +468,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           
           {/* Left Master Column */}
           <div className="lg:col-span-5">
-            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs">
+            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs relative">
+              
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-xs flex items-center justify-center z-10">
+                  <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
@@ -389,10 +490,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {filteredOrders.length > 0 ? (
                       filteredOrders.map((order) => {
                         const isSelected = viewingOrder?.id === order.id;
+                        const displayId = getDisplayOrderId(order.id);
                         return (
                           <tr
                             key={order.id}
-                            onClick={() => setViewingOrder(order)}
+                            onClick={() => handleSelectOrderRow(order)}
                             className={`cursor-pointer transition group ${
                               isSelected
                                 ? 'bg-indigo-50/80 text-indigo-950 font-bold border-l-4 border-indigo-600'
@@ -402,7 +504,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             
                             <td className="py-3.5 px-3.5 whitespace-nowrap">
                               <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 group-hover:text-indigo-600">
-                                <span>{order.id}</span>
+                                <span>{displayId}</span>
                                 {isSelected && <span className="text-[10px] text-indigo-600">●</span>}
                               </div>
                               <p className="text-[11px] text-slate-500 font-medium truncate max-w-32.5">
@@ -411,11 +513,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             </td>
 
                             <td className="py-3.5 px-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
-                              ${(order.totalAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              {formatCurrency(order.totalAmount)}
                             </td>
 
                             <td className="py-3.5 px-3.5 text-right font-semibold text-emerald-600 whitespace-nowrap">
-                              ${(order.totalPaid / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              {formatCurrency(order.totalPaid)}
                             </td>
 
                             <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
@@ -442,10 +544,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="lg:col-span-7 min-h-130">
             <OrderDetailPane
               order={viewingOrder}
+              displayId={viewingOrder ? getDisplayOrderId(viewingOrder.id) : undefined}
               onClose={() => setViewingOrder(null)}
               onOpenEditModal={(ord) => setEditingOrder(ord)}
               onOpenPaymentModal={(ord) => setPaymentOrder(ord)}
-              onDeleteOrder={handleDeleteOrder}
+              onDeleteOrder={handleDeleteOrderSubmit}
             />
           </div>
 
@@ -457,21 +560,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <CreateOrderModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSubmitOrder={handleCreateOrder}
+        onSubmitOrder={handleCreateOrderSubmit}
       />
 
       <EditOrderModal
         order={editingOrder}
         isOpen={!!editingOrder}
         onClose={() => setEditingOrder(null)}
-        onUpdateOrder={handleUpdateOrder}
+        onUpdateOrder={handleUpdateOrderSubmit}
       />
 
       <RecordPaymentModal
         order={paymentOrder}
         isOpen={!!paymentOrder}
         onClose={() => setPaymentOrder(null)}
-        onRecordPayment={handleRecordPayment}
+        onRecordPayment={handleRecordPaymentSubmit}
       />
 
     </div>

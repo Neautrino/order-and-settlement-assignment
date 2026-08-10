@@ -1,8 +1,10 @@
 import React from 'react';
 import { Order } from '../../types/domain';
+import { formatCurrency } from '../../utils/currency';
 
 interface OrderDetailPaneProps {
   order: Order | null;
+  displayId?: string;
   onClose: () => void;
   onOpenEditModal: (order: Order) => void;
   onOpenPaymentModal: (order: Order) => void;
@@ -11,6 +13,7 @@ interface OrderDetailPaneProps {
 
 export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
   order,
+  displayId,
   onClose,
   onOpenEditModal,
   onOpenPaymentModal,
@@ -32,6 +35,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
     );
   }
 
+  const formattedDisplayId = displayId || (order.id.startsWith('order_') ? order.id : 'order_001');
   const hasPayments = order.totalPaid > 0 || (order.payments && order.payments.length > 0);
   const paidPercent = order.totalAmount > 0 ? Math.min(100, Math.round((order.totalPaid / order.totalAmount) * 100)) : 0;
 
@@ -55,8 +59,8 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
       <div className="space-y-4 border-b border-slate-100 pb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold bg-slate-900 text-white px-3 py-1 rounded-xl shadow-xs">
-              {order.id}
+            <span className="font-mono text-xs font-bold bg-slate-900 text-white px-3 py-1 rounded-xl shadow-xs">
+              {formattedDisplayId}
             </span>
             {getStatusBadge(order.status)}
           </div>
@@ -73,7 +77,12 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
 
         <div>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">{order.customerName}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Created on {order.createdAt} • Due {order.dueDate}</p>
+          <p className="text-[11px] font-mono text-slate-400 mt-0.5 select-all break-all">
+            <span className="font-semibold text-slate-400/80">ID:</span> {order.id}
+          </p>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Created on {order.createdAt?.split('T')[0]} • Due {order.dueDate?.split('T')[0]}
+          </p>
         </div>
       </div>
 
@@ -100,27 +109,25 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
             <div className="bg-white p-2.5 rounded-xl border border-slate-100">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</p>
               <p className="text-xs font-black text-slate-900 mt-0.5">
-                ${(order.totalAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatCurrency(order.totalAmount)}
               </p>
             </div>
 
             <div className="bg-white p-2.5 rounded-xl border border-slate-100">
               <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Paid</p>
               <p className="text-xs font-black text-emerald-600 mt-0.5">
-                ${(order.totalPaid / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatCurrency(order.totalPaid)}
               </p>
             </div>
 
             <div className="bg-white p-2.5 rounded-xl border border-slate-100">
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Due</p>
               <p className="text-xs font-black text-slate-800 mt-0.5">
-                ${(order.remainingAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatCurrency(order.remainingAmount)}
               </p>
             </div>
           </div>
         </div>
-
-
 
         {/* Itemized Line Items Table */}
         <div className="space-y-2">
@@ -145,9 +152,9 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
                     <tr key={item.id} className="hover:bg-white transition">
                       <td className="py-2.5 px-3 font-semibold text-slate-900">{item.itemName}</td>
                       <td className="py-2.5 px-3 text-center font-mono">{item.quantity}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">${(item.unitPrice / 100).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-right font-mono">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
-                        ${((item.quantity * item.unitPrice) / 100).toFixed(2)}
+                        {formatCurrency(item.quantity * item.unitPrice)}
                       </td>
                     </tr>
                   ))
@@ -175,8 +182,8 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
               {order.payments.map((p) => (
                 <div key={p.id} className="bg-slate-50/80 border border-slate-100 p-3 rounded-2xl flex items-center justify-between text-xs">
                   <div>
-                    <p className="font-bold text-slate-900">${(p.amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{p.note || 'No reference note'} • {p.paymentDate}</p>
+                    <p className="font-bold text-slate-900">{formatCurrency(p.amount)}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">{p.note || 'No reference note'} • {p.paymentDate?.split('T')[0]}</p>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                     SETTLED

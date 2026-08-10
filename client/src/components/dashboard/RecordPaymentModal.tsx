@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Order } from '../../types/domain';
+import { centsToDollars, dollarsToCents, formatCurrency } from '../../utils/currency';
 
 interface RecordPaymentModalProps {
   order: Order | null;
@@ -20,7 +21,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
 
   if (!isOpen || !order) return null;
 
-  const remainingDollars = order.remainingAmount / 100;
+  const remainingDollars = centsToDollars(order.remainingAmount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +33,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       return;
     }
 
-    const paymentCents = Math.round(paymentDollars * 100);
+    const paymentCents = dollarsToCents(paymentDollars);
 
     if (paymentCents > order.remainingAmount) {
-      setErrorMsg(`Payment amount ($${paymentDollars.toFixed(2)}) exceeds remaining balance ($${remainingDollars.toFixed(2)})`);
+      setErrorMsg(`Payment amount (${formatCurrency(paymentCents)}) exceeds remaining balance (${formatCurrency(order.remainingAmount)})`);
       return;
     }
 
@@ -73,7 +74,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
           </div>
           <div className="text-right">
             <span className="text-[11px] font-semibold text-indigo-900">Remaining Balance</span>
-            <p className="text-base font-extrabold text-indigo-900">${remainingDollars.toFixed(2)}</p>
+            <p className="text-base font-extrabold text-indigo-900">{formatCurrency(order.remainingAmount)}</p>
           </div>
         </div>
 
@@ -93,7 +94,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 onClick={setFullAmount}
                 className="text-[11px] font-bold text-emerald-600 hover:underline cursor-pointer"
               >
-                Pay Full Balance (${remainingDollars.toFixed(2)})
+                Pay Full Balance ({formatCurrency(order.remainingAmount)})
               </button>
             </div>
 

@@ -18,6 +18,15 @@ export default function App() {
     if (storedUser) {
       setUserEmail(storedUser.email);
     }
+
+    const handleUnauthorized = () => {
+      logoutUser();
+      setCurrentView('login');
+      handleAction('Session expired. Please sign in again.');
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const handleAction = (message: string) => {

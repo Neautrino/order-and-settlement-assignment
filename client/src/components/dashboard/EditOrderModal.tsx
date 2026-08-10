@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderItem } from '../../types/domain';
+import { formatCurrency, centsToDollars, dollarsToCents } from '../../utils/currency';
 
 interface EditOrderModalProps {
   order: Order | null;
@@ -49,10 +50,10 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
     setItems(updated);
   };
 
-  const calculatedTotalDollars = items.reduce((sum, item) => {
+  const calculatedTotalCents = items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unitPrice) || 0;
-    return sum + (qty * price) / 100;
+    return sum + qty * price;
   }, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,7 +94,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
             <div>
               <p className="font-bold text-amber-900">Editing Disabled (Financial Guard Enforcement)</p>
               <p className="mt-0.5 text-amber-700">
-                This order already has ${ (order.totalPaid / 100).toFixed(2) } in payments recorded against it.
+                This order already has {formatCurrency(order.totalPaid)} in payments recorded against it.
                 The backend forbids modifying orders with recorded payments.
               </p>
             </div>
@@ -176,8 +177,8 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                       min="0.01"
                       disabled={hasPaymentsRecorded}
                       required
-                      value={(item.unitPrice / 100) || ''}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', Math.round((parseFloat(e.target.value) || 0) * 100))}
+                      value={centsToDollars(item.unitPrice) || ''}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', dollarsToCents(parseFloat(e.target.value) || 0))}
                       className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 disabled:opacity-60"
                     />
                   </div>
@@ -196,31 +197,29 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
             </div>
           </div>
 
+          {/* Live Total Calculation Banner */}
           <div className="bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-between">
             <div>
               <span className="text-xs text-slate-400 font-medium">Updated Order Total</span>
-              <p className="text-xl font-extrabold tracking-tight">
-                ${calculatedTotalDollars.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
+              <p className="text-lg font-black text-white">{formatCurrency(calculatedTotalCents)}</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
             >
-              Close
+              Cancel
             </button>
-            {!hasPaymentsRecorded && (
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition cursor-pointer"
-              >
-                Save Changes
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={hasPaymentsRecorded}
+              className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold shadow-md transition cursor-pointer"
+            >
+              Save Order Changes
+            </button>
           </div>
 
         </form>

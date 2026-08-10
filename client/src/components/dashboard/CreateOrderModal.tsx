@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { OrderItem } from '../../types/domain';
+import { formatCurrency, centsToDollars, dollarsToCents } from '../../utils/currency';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmitOrder: (newOrder: { customerName: string; dueDate: string; items: OrderItem[] }) => void;
+  onSubmitOrder: (orderData: {
+    customerName: string;
+    dueDate: string;
+    items: OrderItem[];
+  }) => void;
 }
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
@@ -15,7 +20,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const [customerName, setCustomerName] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [items, setItems] = useState<OrderItem[]>([
-    { itemName: 'Web Development Services', quantity: 1, unitPrice: 50000 },
+    { itemName: '', quantity: 1, unitPrice: 1000 }, // default $10.00
   ]);
 
   if (!isOpen) return null;
@@ -35,11 +40,11 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     setItems(updated);
   };
 
-  // Calculate live total amount in dollars
-  const calculatedTotalDollars = items.reduce((sum, item) => {
+  // Calculate live total amount in cents
+  const calculatedTotalCents = items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unitPrice) || 0; // in cents
-    return sum + (qty * price) / 100;
+    return sum + qty * price;
   }, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -148,8 +153,8 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       min="0.01"
                       required
                       placeholder="Unit Price"
-                      value={(item.unitPrice / 100) || ''}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', Math.round((parseFloat(e.target.value) || 0) * 100))}
+                      value={centsToDollars(item.unitPrice) || ''}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', dollarsToCents(parseFloat(e.target.value) || 0))}
                       className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
@@ -173,9 +178,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
           <div className="bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-between">
             <div>
               <span className="text-xs text-slate-400 font-medium">Calculated Order Total</span>
-              <p className="text-xl font-extrabold tracking-tight">
-                ${calculatedTotalDollars.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
+              <p className="text-lg font-black text-white">{formatCurrency(calculatedTotalCents)}</p>
             </div>
             <span className="text-xs bg-slate-800 text-emerald-400 px-3 py-1 rounded-full font-bold">
               PAISE / CENTS Math Verified
