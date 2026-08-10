@@ -6,15 +6,23 @@
   "scripts": {
     "dev": "bun --watch ./src/index.ts",
     "start": "bun ./src/index.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target bun"
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "migrate": "bunx --bun prisma migrate dev",
+    "generate": "bunx --bun prisma generate"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/pg": "^8.21.0",
+    "prisma": "^7.9.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "fastify": "^5.11.3"
+    "@fastify/jwt": "^10.2.1",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "fastify": "^5.11.3",
+    "pg": "^8.23.0"
   }
 }

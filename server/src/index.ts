@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { connectDb } from "./lib/prisma";
 
 const PORT = 3000
 
@@ -12,6 +13,8 @@ fastify.get('/', async (request, reply) => {
     message: 'Order and settlements server is running'
   }
 })
+
+await connectDb(fastify.log);
 
 fastify.listen({ port: PORT }, (err, address) => {
   if (err) {
