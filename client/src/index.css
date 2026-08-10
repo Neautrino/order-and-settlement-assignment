@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+@keyframes unfoldTopDown {
+  0% {
+    max-height: 0px;
+  }
+  100% {
+    max-height: 600px;  }
+}
+
+.animate-unfold-down {
+  animation: unfoldTopDown 1s ease-in-out forwards;
+  overflow: hidden;
+}

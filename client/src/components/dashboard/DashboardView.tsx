@@ -140,7 +140,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setViewingOrder(order);
     try {
       const fullDetail = await fetchOrderById(order.id);
-      setViewingOrder(fullDetail);
+      setViewingOrder((current) => (current?.id === order.id ? fullDetail : current));
     } catch {
       // Fallback to existing order object if single fetch unavailable
     }
@@ -347,7 +347,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Main Glassmorphism Dashboard Container */}
-      <div className="relative z-10 max-w-7xl mx-auto bg-white/80 backdrop-blur-xl border border-white/80 shadow-2xl rounded-3xl p-5 sm:p-7 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto bg-white/80 backdrop-blur-xl border border-white/80 shadow-2xl rounded-3xl p-5 sm:p-7 space-y-6">
         
         {/* Toast Alert Banner */}
         {alertMsg && (

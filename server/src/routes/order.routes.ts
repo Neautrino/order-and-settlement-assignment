@@ -60,10 +60,15 @@ export async function orderRoutes(app: FastifyInstance) {
         const orders = await prisma.order.findMany({
             where: {userId: request.user.id},
             include: { 
+                items: true,
                 payments: {
-                    select : {
-                        amount: true
-                    }
+                    select: {
+                        id: true,
+                        amount: true,
+                        note: true,
+                        paymentDate: true,
+                    },
+                    orderBy: { paymentDate: "desc" }
                 }
             },
             orderBy: { createdAt: "desc" },
@@ -92,6 +97,8 @@ export async function orderRoutes(app: FastifyInstance) {
                 totalPaid,
                 remainingAmount: order.totalAmount - totalPaid,
                 dueDate: order.dueDate,
+                items: order.items,
+                payments: order.payments,
                 createdAt: order.createdAt,
             };
         })
@@ -119,8 +126,14 @@ export async function orderRoutes(app: FastifyInstance) {
             },
             include: { 
                 items: true,
-                payments:  {
-                    select: {amount: true}
+                payments: {
+                    select: {
+                        id: true,
+                        amount: true,
+                        note: true,
+                        paymentDate: true,
+                    },
+                    orderBy: { paymentDate: "desc" }
                 }
             },
         })
@@ -155,6 +168,7 @@ export async function orderRoutes(app: FastifyInstance) {
                 remainingAmount: order.totalAmount - totalPaid,
                 dueDate: order.dueDate,
                 items: order.items,
+                payments: order.payments,
                 createdAt: order.createdAt,
                 updatedAt: order.updatedAt,
             },
