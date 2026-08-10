@@ -3,15 +3,40 @@ import { Navbar } from './components/layout/Navbar';
 import { HeroSection } from './components/landing/HeroSection';
 import { DashboardPreview } from './components/dashboard/DashboardPreview';
 import { FeaturesSection } from './components/landing/FeaturesSection';
+import { AuthPage } from './components/auth/AuthPage';
 import { Toast } from './components/ui/Toast';
 
 export default function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register'>('landing');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleAction = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const handleOpenAuth = (mode: 'login' | 'register') => {
+    setCurrentView(mode);
+  };
+
+  const handleBackToHome = () => {
+    setCurrentView('landing');
+  };
+
+  const handleAuthSuccess = (userEmail: string) => {
+    setCurrentView('landing');
+    handleAction(`Signed in successfully as ${userEmail}!`);
+  };
+
+  if (currentView === 'login' || currentView === 'register') {
+    return (
+      <AuthPage
+        initialMode={currentView}
+        onBackToHome={handleBackToHome}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-slate-900 selection:text-white relative overflow-x-hidden">
@@ -31,12 +56,15 @@ export default function App() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24">
         
         {/* Navigation Bar */}
-        <Navbar onActionClick={handleAction} />
+        <Navbar 
+          onActionClick={handleAction} 
+          onOpenAuth={handleOpenAuth} 
+        />
 
         {/* Hero Banner Section */}
         <HeroSection 
-          onStartFree={() => handleAction("Free Trial Initialized")} 
-          onBookDemo={() => handleAction("Demo Request Sent! Our team will reach out.")} 
+          onStartFree={() => handleOpenAuth('register')} 
+          onBookDemo={() => handleOpenAuth('register')} 
         />
 
         {/* Floating Glass Dashboard Preview */}

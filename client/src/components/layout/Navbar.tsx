@@ -2,9 +2,10 @@ import React from 'react';
 
 interface NavbarProps {
   onActionClick: (actionName: string) => void;
+  onOpenAuth: (mode: 'login' | 'register') => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onActionClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onActionClick, onOpenAuth }) => {
   return (
     <header className="flex items-center justify-between py-3.5 px-6 rounded-full bg-white/75 backdrop-blur-md border border-white/60 shadow-sm transition-all duration-300 hover:shadow-md">
       {/* Brand Logo */}
@@ -14,7 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onActionClick }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
         </div>
-        <span className="text-xl font-bold tracking-tight text-slate-900">DummyCrp</span>
+        <span className="text-xl font-bold tracking-tight text-slate-900">DummyPay</span>
       </div>
 
       {/* Nav Links */}
@@ -35,14 +36,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onActionClick }) => {
       {/* Auth Actions */}
       <div className="flex items-center gap-4">
         <button 
-          onClick={() => onActionClick("Sign In Modal")} 
-          className="text-sm font-medium text-slate-700 hover:text-slate-900 px-3 py-2 transition"
+          onClick={() => onOpenAuth('login')} 
+          className="text-sm font-medium text-slate-700 hover:text-slate-900 px-3 py-2 transition cursor-pointer"
         >
           Sign In
         </button>
         <button 
-          onClick={() => onActionClick("Get Started Free")} 
-          className="text-sm font-semibold bg-white text-slate-900 border border-slate-200/80 px-5 py-2.5 rounded-full shadow-sm hover:shadow hover:bg-slate-50 active:scale-95 transition"
+          onClick={() => onOpenAuth('register')} 
+          className="text-sm font-semibold bg-white text-slate-900 border border-slate-200/80 px-5 py-2.5 rounded-full shadow-sm hover:shadow hover:bg-slate-50 active:scale-95 transition cursor-pointer"
         >
           Get Started
         </button>

@@ -54,7 +54,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
-                <span className="font-bold text-slate-900 tracking-tight">DummyCrp</span>
+                <span className="font-bold text-slate-900 tracking-tight">DummyPay</span>
               </div>
 
               <nav className="space-y-1">
@@ -84,10 +84,10 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
             <div className="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between px-2 cursor-pointer" onClick={() => onActionClick("Business Profile settings")}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs">
-                  DC
+                  DP
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-900">DummyCrp Demo</p>
+                  <p className="text-xs font-semibold text-slate-900">DummyPay Demo</p>
                   <p className="text-[11px] text-slate-500">Demo Account</p>
                 </div>
               </div>

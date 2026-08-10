@@ -16,13 +16,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartFree, onBookDem
       </h1>
 
       <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-        DummyCrp Is A Lightweight Order & Settlement Platform For Modern Businesses To Track Orders, Process Payments, And Manage Balances.
+        DummyPay Is A Lightweight Order & Settlement Platform For Modern Businesses To Track Orders, Process Payments, And Manage Balances.
       </p>
 
       <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
         <button 
           onClick={onStartFree} 
-          className="w-full sm:w-auto bg-slate-900 text-white font-semibold px-7 py-3.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl active:scale-95 transition flex items-center justify-center gap-2 group"
+          className="w-full sm:w-auto bg-slate-900 text-white font-semibold px-7 py-3.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl active:scale-95 transition flex items-center justify-center gap-2 group cursor-pointer"
         >
           Start For Free
           <svg className="w-4 h-4 transform group-hover:translate-x-1 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -32,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartFree, onBookDem
 
         <button 
           onClick={onBookDemo} 
-          className="w-full sm:w-auto bg-white/90 backdrop-blur-sm text-slate-800 font-semibold px-7 py-3.5 rounded-full border border-slate-200/80 shadow-sm hover:bg-white hover:border-slate-300 hover:shadow active:scale-95 transition"
+          className="w-full sm:w-auto bg-white/90 backdrop-blur-sm text-slate-800 font-semibold px-7 py-3.5 rounded-full border border-slate-200/80 shadow-sm hover:bg-white hover:border-slate-300 hover:shadow active:scale-95 transition cursor-pointer"
         >
           Book A Demo
         </button>
