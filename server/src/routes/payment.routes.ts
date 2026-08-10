@@ -20,7 +20,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     }, async(request, reply) => {
         const {orderId} = request.params;
 
-        const result = await getCalculatedOrderBalance(orderId, request.user.id)
+        const result = await getCalculatedOrderBalance(orderId, request.user.id, request.log)
 
         if(!result) {
             return reply.status(HTTP_STATUS.NOT_FOUND).send({
@@ -44,7 +44,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         const {orderId, amount, note} = request.body;
         const paymentAmount = BigInt(amount);
 
-        const balance = await getCalculatedOrderBalance(orderId, request.user.id)
+        const balance = await getCalculatedOrderBalance(orderId, request.user.id, request.log)
 
         if(!balance){
             return reply.status(HTTP_STATUS.NOT_FOUND).send({

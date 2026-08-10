@@ -4,6 +4,7 @@ import { authenticate } from "../lib/middleware";
 import { orderParamsSchema, orderSchema } from "../validator/order.validator";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
+import { resolveOrderStatus } from "../utils/status-calc";
 
 //conver BigInt to number for json response
 (BigInt.prototype as any).toJSON = function() {
@@ -58,19 +59,53 @@ export async function orderRoutes(app: FastifyInstance) {
     }, async (request, reply) => {
         const orders = await prisma.order.findMany({
             where: {userId: request.user.id},
-            select: {
-                id: true,
-                customerName: true,
-                status: true,
-                totalAmount: true,
-                dueDate: true,
-                createdAt: true,
-                updatedAt: true
+            include: { 
+                payments: {
+                    select : {
+                        amount: true
+                    }
+                }
             },
             orderBy: { createdAt: "desc" },
         })
+
+        const statusChangedIds: string[] = [];
+
+        const formattedOrders = orders.map((order) => {
+            const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0n);
+            const realTimeStatus = resolveOrderStatus({
+                status: order.status,
+                totalAmount: order.totalAmount,
+                totalPaid,
+                dueDate: order.dueDate
+            })
+
+            if(realTimeStatus !== order.status && realTimeStatus === "OVERDUE") {
+                statusChangedIds.push(order.id);
+            }
+
+            return {
+                id: order.id,
+                customerName: order.customerName,
+                status: realTimeStatus,
+                totalAmount: order.totalAmount,
+                totalPaid,
+                remainingAmount: order.totalAmount - totalPaid,
+                dueDate: order.dueDate,
+                createdAt: order.createdAt,
+            };
+        })
+
+        if(statusChangedIds.length > 0) {
+            prisma.order.updateMany({
+                where: {id: {
+                    in: statusChangedIds
+                }},
+                data: { status: "OVERDUE" }
+            }).catch(err => request.log.error(err, "Failed background status sync"))
+        }
         
-        return reply.status(HTTP_STATUS.OK).send(orders)
+        return reply.status(HTTP_STATUS.OK).send(formattedOrders)
     })
 
     fastify.get("/:id", {
@@ -82,16 +117,47 @@ export async function orderRoutes(app: FastifyInstance) {
                 id: request.params.id,
                 userId: request.user.id
             },
-            include: { items: true},
+            include: { 
+                items: true,
+                payments:  {
+                    select: {amount: true}
+                }
+            },
         })
 
         if (!order) {
             return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found"})
         }
 
+        const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0n);
+        const realTimeStatus = resolveOrderStatus({
+            status: order.status,
+            totalAmount: order.totalAmount,
+            totalPaid,
+            dueDate: order.dueDate
+        })
+
+        if(realTimeStatus !== order.status && realTimeStatus==="OVERDUE"){
+            prisma.order.update({
+                where: {id: order.id},
+                data: {status: "OVERDUE"}
+            }).catch(err => request.log.error(err, "Failed background status sync"))
+        }
+
         return reply.status(HTTP_STATUS.OK).send({
             message: "Order fetched successfully",
-            order,
+            order: {
+                id: order.id,
+                customerName: order.customerName,
+                status: realTimeStatus,
+                totalAmount: order.totalAmount,
+                totalPaid,
+                remainingAmount: order.totalAmount - totalPaid,
+                dueDate: order.dueDate,
+                items: order.items,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+            },
         })
     })
 

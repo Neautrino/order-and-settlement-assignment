@@ -1,13 +1,12 @@
 import { prisma } from "../lib/prisma";
+import { resolveOrderStatus } from "./status-calc";
+import type { FastifyBaseLogger } from "fastify";
 
-export function isOrderOverdue(dueDate: Date | string, status?: string): boolean {
-  if (status === "OVERDUE") {
-    return true;
-  }
-  return new Date(dueDate) < new Date();
-}
-
-export async function getCalculatedOrderBalance(orderId: string, userId: string) {
+export async function getCalculatedOrderBalance(
+  orderId: string, 
+  userId: string,
+  logger?: FastifyBaseLogger
+) {
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, userId },
@@ -21,14 +20,24 @@ export async function getCalculatedOrderBalance(orderId: string, userId: string)
   const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0n)
   const remainingAmount = order.totalAmount - totalPaid
 
-  const overdue = isOrderOverdue(order.dueDate, order.status);
-  const effectiveStatus = overdue && order.status !== "PAID" ? "OVERDUE" : order.status;
+  const realTimeStatus = resolveOrderStatus({
+    status: order.status,
+    totalAmount: order.totalAmount,
+    totalPaid,
+    dueDate: order.dueDate
+  })
 
-  if (order.status !== effectiveStatus) {
-    await prisma.order.update({
-      where: { id: orderId, userId },
-      data: { status: effectiveStatus }
-    });
+  if(realTimeStatus !== order.status && realTimeStatus === "OVERDUE") {
+    prisma.order.update({
+      where: {id: order.id},
+      data: {status: "OVERDUE"}
+    }).catch(err => {
+      if(logger) {
+        logger.error({err}, "Failed background status sync");
+      } else {
+        console.error("Failed background status sync", err)
+      }
+    })
   }
 
   return {
@@ -36,6 +45,6 @@ export async function getCalculatedOrderBalance(orderId: string, userId: string)
     totalAmount: order.totalAmount,
     totalPaid,
     remainingAmount,
-    status: order.status,
+    status: realTimeStatus,
   };
 }
