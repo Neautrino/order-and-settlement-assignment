@@ -14,7 +14,10 @@ fastify.setValidatorCompiler(validatorCompiler)
 fastify.setSerializerCompiler(serializerCompiler)
 
 fastify.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET || "jwt-secret-key"
+  secret: process.env.JWT_SECRET || "jwt-secret-key",
+  sign: {
+    expiresIn: "24h"
+  }
 })
 
 fastify.get('/', async (request, reply) => {

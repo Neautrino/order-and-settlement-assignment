@@ -2,8 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { type ZodTypeProvider } from "fastify-type-provider-zod";
 import { loginSchema, registerSchema } from "../validator/auth.validator";
 import { prisma } from "../lib/prisma";
-import { password } from "bun";
 import { HTTP_STATUS } from "../constants/http-status";
+import { authenticate } from "../lib/middleware";
 
 export async function authRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<ZodTypeProvider>();
@@ -58,5 +58,11 @@ export async function authRoutes(app: FastifyInstance) {
           user: {id: user.id, email: user.email},
           token
       })
+  })
+
+  fastify.get( "/me", {
+    onRequest: [authenticate],
+  }, async(request, reply) => {
+    return reply.status(HTTP_STATUS.OK).send({ user: request.user })
   })
 }
