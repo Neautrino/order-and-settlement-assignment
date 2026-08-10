@@ -3,6 +3,7 @@ import { connectDb } from "./lib/prisma";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import fastifyJwt from "@fastify/jwt";
 import { authRoutes } from "./routes/auth.routes";
+import { orderRoutes } from "./routes/order.routes";
 
 const PORT = 3000
 
@@ -29,6 +30,10 @@ fastify.get('/', async (request, reply) => {
 
 fastify.register(authRoutes, {
   prefix: "/api/auth"
+})
+
+fastify.register(orderRoutes, {
+  prefix: "/api/orders"
 })
 
 await connectDb(fastify.log);
