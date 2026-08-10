@@ -16,5 +16,8 @@ export const orderParamsSchema = z.object({
     id: z.uuid("Invalid order ID"),
 })
 
+export const updateOrderSchema = orderSchema.partial();
+
 export type OrderInput = z.infer<typeof orderSchema>;
 export type OrderParamsSchema = z.infer<typeof orderParamsSchema>;
+export type updateOrderSchema = z.infer<typeof updateOrderSchema>;

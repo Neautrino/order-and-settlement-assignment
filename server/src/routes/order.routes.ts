@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { authenticate } from "../lib/middleware";
-import { orderParamsSchema, orderSchema } from "../validator/order.validator";
+import { orderParamsSchema, orderSchema, updateOrderSchema } from "../validator/order.validator";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { resolveOrderStatus } from "../utils/status-calc";
@@ -158,6 +158,98 @@ export async function orderRoutes(app: FastifyInstance) {
                 createdAt: order.createdAt,
                 updatedAt: order.updatedAt,
             },
+        })
+    })
+
+    fastify.patch("/:id", {
+        onRequest: [authenticate],
+        schema: {
+            params: orderParamsSchema,
+            body: updateOrderSchema,
+        }
+    }, async (request, reply) => {
+        const {id } = request.params;
+        const {customerName, dueDate, items} = request.body;
+
+        const order = await prisma.order.findFirst({
+            where: {id, userId: request.user.id},
+            include: {payments: true}
+        })
+
+        if(!order){
+            return reply.status(HTTP_STATUS.NOT_FOUND).send({
+                message: "Order not found"
+            })
+        }
+
+        if(order.payments.length > 0){
+            return reply.status(HTTP_STATUS.BAD_REQUEST).send({
+                message: "Cannot update an order that has payments recorded against it"
+            })
+        }
+
+        if(items && items.length > 0) {
+            const totalAmount = items.reduce((sum, item) => sum + BigInt(item.quantity) * BigInt(item.unitPrice), 0n)
+
+            const updatedOrder = await prisma.$transaction(async (tx) => {
+                await tx.orderItem.deleteMany({
+                    where: {orderId: id}
+                })
+
+                return tx.order.update({
+                    where: {id},
+                    data: {
+                        ...(customerName && {customerName}),
+                        ...(dueDate && {dueDate: new Date(dueDate)}),
+                        totalAmount,
+                        items: {
+                            createMany: {
+                                data: items.map((item) => ({
+                                    itemName: item.itemName,
+                                    quantity: item.quantity,
+                                    unitPrice: BigInt(item.unitPrice)
+                                }))
+                            }
+                        }
+                    },
+                    select: {
+                        id: true,
+                        customerName: true,
+                        status: true,
+                        totalAmount: true,
+                        dueDate: true,
+                        items: true,
+                        updatedAt: true
+                    }
+                })
+            })
+
+            return reply.status(HTTP_STATUS.OK).send({
+                message: "Order updated successfully",
+                order: updatedOrder,
+            })
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: {id},
+            data: {
+                ...(customerName && {customerName}),
+                ...(dueDate && { dueDate: new Date(dueDate)}),
+            },
+            select: {
+                id: true,
+                customerName: true,
+                status: true,
+                totalAmount: true,
+                dueDate: true,
+                items: true,
+                updatedAt: true,
+            }
+        })
+        
+        return reply.status(HTTP_STATUS.OK).send({
+            message: "Order updated successfully",
+            order: updatedOrder
         })
     })
 
