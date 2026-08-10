@@ -104,7 +104,8 @@ export async function orderRoutes(app: FastifyInstance) {
             where: {
                 id: id,
                 userId: request.user.id
-            }
+            },
+            include: {payments: true}
         })
 
         if (!order){
@@ -113,9 +114,9 @@ export async function orderRoutes(app: FastifyInstance) {
             })
         }
 
-        if(order.status === "PAID" || order.status === "PARTIALLY_PAID") {
+        if(order.payments.length > 0){
             return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                message: `Cannot delete an order that is ${order.status}`
+                message: "Cannot delete an order that has payments recorded against it"
             })
         }
         
