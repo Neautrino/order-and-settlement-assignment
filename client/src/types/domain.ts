@@ -7,6 +7,14 @@ export interface OrderItem {
   unitPrice: number; // In paise/cents
 }
 
+export interface Payment {
+  id: string;
+  orderId: string;
+  amount: number;
+  note?: string;
+  paymentDate: string;
+}
+
 export interface Order {
   id: string;
   customerName: string;
@@ -17,14 +25,7 @@ export interface Order {
   dueDate: string;
   createdAt: string;
   items?: OrderItem[];
-}
-
-export interface Payment {
-  id: string;
-  orderId: string;
-  amount: number;
-  note?: string;
-  paymentDate: string;
+  payments?: Payment[];
 }
 
 export interface MetricCardData {

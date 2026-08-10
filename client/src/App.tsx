@@ -1,14 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { HeroSection } from './components/landing/HeroSection';
 import { DashboardPreview } from './components/dashboard/DashboardPreview';
 import { FeaturesSection } from './components/landing/FeaturesSection';
 import { AuthPage } from './components/auth/AuthPage';
+import { DashboardView } from './components/dashboard/DashboardView';
 import { Toast } from './components/ui/Toast';
+import { getStoredUser, logoutUser } from './services/auth.service';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'dashboard'>('landing');
+  const [userEmail, setUserEmail] = useState<string>('admin@dummypay.com');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedUser = getStoredUser();
+    if (storedUser) {
+      setUserEmail(storedUser.email);
+    }
+  }, []);
 
   const handleAction = (message: string) => {
     setToastMessage(message);
@@ -23,9 +33,16 @@ export default function App() {
     setCurrentView('landing');
   };
 
-  const handleAuthSuccess = (userEmail: string) => {
+  const handleAuthSuccess = (email: string) => {
+    setUserEmail(email);
+    setCurrentView('dashboard');
+    handleAction(`Signed in successfully as ${email}!`);
+  };
+
+  const handleLogout = () => {
+    logoutUser();
     setCurrentView('landing');
-    handleAction(`Signed in successfully as ${userEmail}!`);
+    handleAction('Signed out successfully.');
   };
 
   if (currentView === 'login' || currentView === 'register') {
@@ -34,6 +51,16 @@ export default function App() {
         initialMode={currentView}
         onBackToHome={handleBackToHome}
         onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  if (currentView === 'dashboard') {
+    return (
+      <DashboardView
+        userEmail={userEmail}
+        onLogout={handleLogout}
+        onNavigateHome={handleBackToHome}
       />
     );
   }
@@ -57,7 +84,13 @@ export default function App() {
         
         {/* Navigation Bar */}
         <Navbar 
-          onActionClick={handleAction} 
+          onActionClick={(action) => {
+            if (action === "Dashboard Access") {
+              setCurrentView('dashboard');
+            } else {
+              handleAction(action);
+            }
+          }} 
           onOpenAuth={handleOpenAuth} 
         />
 
@@ -68,7 +101,21 @@ export default function App() {
         />
 
         {/* Floating Glass Dashboard Preview */}
-        <DashboardPreview onActionClick={handleAction} />
+        <div className="relative">
+          <DashboardPreview onActionClick={handleAction} />
+          
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-full shadow-lg transition active:scale-95 cursor-pointer flex items-center gap-2"
+            >
+              <span>🚀 Launch Full Interactive Dashboard App</span>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
         {/* System Features Section */}
         <FeaturesSection />
@@ -76,4 +123,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+};
