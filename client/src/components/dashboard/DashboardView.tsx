@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Order, OrderItem } from '../../types/domain';
 import { CreateOrderModal } from './CreateOrderModal';
 import { EditOrderModal } from './EditOrderModal';
-import { OrderDetailsDrawer } from './OrderDetailsDrawer';
+import { OrderDetailPane } from './OrderDetailPane';
 import { RecordPaymentModal } from './RecordPaymentModal';
 
 interface DashboardViewProps {
@@ -81,19 +81,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onLogout,
   onNavigateHome,
 }) => {
-  const [activeTab, setActiveTab] = useState('Orders');
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
 
-  // Modals & Drawer State
+  // Modals & Active Selected Order Workspace State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(orders[0]); // Default to first order
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const navItems = ['Orders', 'Overview', 'Transactions', 'Payments', 'Invoices', 'Reports', 'Settings'];
 
   const showAlert = (text: string, type: 'success' | 'error' = 'success') => {
     setAlertMsg({ type, text });
@@ -123,6 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     };
 
     setOrders([newOrder, ...orders]);
+    setViewingOrder(newOrder);
     showAlert(`Order ${newOrder.id} created successfully!`);
   };
 
@@ -130,6 +128,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     orderId: string,
     updatedData: { customerName?: string; dueDate?: string; items?: OrderItem[] }
   ) => {
+    let updatedOrderObj: Order | null = null;
+
     setOrders(
       orders.map((o) => {
         if (o.id !== orderId) return o;
@@ -144,7 +144,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           ? newItems.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
           : o.totalAmount;
 
-        return {
+        const updated = {
           ...o,
           customerName: updatedData.customerName || o.customerName,
           dueDate: updatedData.dueDate || o.dueDate,
@@ -152,8 +152,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           totalAmount,
           remainingAmount: totalAmount - o.totalPaid,
         };
+
+        updatedOrderObj = updated;
+        return updated;
       })
     );
+
+    if (updatedOrderObj) {
+      setViewingOrder(updatedOrderObj);
+    }
 
     showAlert(`Order ${orderId} updated successfully!`);
   };
@@ -168,19 +175,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
 
     if (window.confirm(`Are you sure you want to delete ${orderId}?`)) {
-      setOrders(orders.filter((o) => o.id !== orderId));
+      const remaining = orders.filter((o) => o.id !== orderId);
+      setOrders(remaining);
+      setViewingOrder(remaining.length > 0 ? remaining[0] : null);
       showAlert(`Order ${orderId} deleted successfully.`);
     }
   };
 
   const handleRecordPayment = (orderId: string, paymentAmountCents: number, note: string) => {
-    setOrders(
-      orders.map((o) => {
+    setOrders((prevOrders) => {
+      const updatedOrders = prevOrders.map((o) => {
         if (o.id !== orderId) return o;
 
         const newTotalPaid = o.totalPaid + paymentAmountCents;
-        const newRemaining = o.totalAmount - newTotalPaid;
-        const newStatus = newRemaining === 0 ? 'PAID' : 'PARTIALLY_PAID';
+        const newRemaining = Math.max(0, o.totalAmount - newTotalPaid);
+        const newStatus: Order['status'] = newRemaining === 0 ? 'PAID' : 'PARTIALLY_PAID';
 
         const newPayment = {
           id: `pay_${Date.now()}`,
@@ -190,15 +199,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           paymentDate: new Date().toISOString().split('T')[0],
         };
 
-        return {
+        const updated: Order = {
           ...o,
           totalPaid: newTotalPaid,
           remainingAmount: newRemaining,
           status: newStatus,
           payments: [...(o.payments || []), newPayment],
         };
-      })
-    );
+
+        setViewingOrder(updated);
+        return updated;
+      });
+
+      return updatedOrders;
+    });
 
     showAlert(`Recorded payment of $${(paymentAmountCents / 100).toFixed(2)} against ${orderId}`);
   };
@@ -238,8 +252,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="absolute top-75 -right-25 w-96 h-96 bg-emerald-200/30 blur-[100px] rounded-full" />
       </div>
 
-      {/* Main Glassmorphism Dashboard Window */}
-      <div className="relative z-10 max-w-7xl mx-auto bg-white/80 backdrop-blur-xl border border-white/80 shadow-2xl rounded-3xl p-4 sm:p-6 space-y-6">
+      {/* Main Glassmorphism Dashboard Container */}
+      <div className="relative z-10 max-w-7xl mx-auto bg-white/80 backdrop-blur-xl border border-white/80 shadow-2xl rounded-3xl p-5 sm:p-7 space-y-6">
         
         {/* Toast Alert Banner */}
         {alertMsg && (
@@ -253,180 +267,167 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         )}
 
-        {/* Dashboard Frame Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Top Header Row with Logo (Left), Title (Center), User Profile (Top Right) */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           
-          {/* Integrated Left Sidebar */}
-          <aside className="lg:col-span-3 bg-slate-50/70 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between min-h-[600px]">
-            <div>
-              <div className="flex items-center justify-between px-3 py-2 mb-6 cursor-pointer" onClick={onNavigateHome}>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center shadow-md">
-                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  <span className="font-bold text-slate-900 tracking-tight text-lg">DummyPay</span>
-                </div>
-                
+          {/* Logo & Workspace Title */}
+          <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-2.5 cursor-pointer group" 
+              onClick={onNavigateHome}
+              title="Go to landing page"
+            >
+              <div className="w-10 h-10 bg-slate-900 group-hover:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md transition">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-900 tracking-tight text-xl">DummyPay</span>
                 <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">
                   App
                 </span>
               </div>
-
-              <nav className="space-y-1">
-                {navItems.map((item) => {
-                  const isActive = activeTab === item;
-                  return (
-                    <button
-                      key={item}
-                      onClick={() => setActiveTab(item)}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                        isActive 
-                          ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60 font-bold' 
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-indigo-600' : 'bg-slate-300'}`} />
-                      {item}
-                    </button>
-                  );
-                })}
-              </nav>
             </div>
 
-            {/* Bottom Profile & Sign Out Card */}
-            <div className="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between px-2">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs shrink-0">
-                  {userEmail.charAt(0).toUpperCase()}
-                </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-slate-900 truncate">{userEmail}</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Active Account</p>
-                </div>
-              </div>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
+            <div className="hidden sm:block">
+              <h2 className="text-lg font-bold text-slate-800 tracking-tight leading-tight">Order & Settlement Engine</h2>
+            </div>
+          </div>
+
+          {/* Top Right User Profile Card */}
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-xs">
+              <div className="w-7 h-7 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs shrink-0">
+                {userEmail.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs font-bold text-slate-900 truncate max-w-35 sm:max-w-45">
+                {userEmail}
+              </span>
               <button
                 onClick={onLogout}
-                className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+                className="text-[11px] font-bold text-rose-600 hover:bg-rose-100/70 px-2 py-0.5 rounded-lg transition cursor-pointer shrink-0 ml-1"
                 title="Sign Out"
               >
                 Exit
               </button>
             </div>
-          </aside>
+          </div>
 
-          {/* Main Dashboard Panel */}
-          <main className="lg:col-span-9 space-y-6">
+        </header>
+
+        {/* Integrated Single Control Bar: Filters (Left) + Search (Center) + Create Order CTA (Far Right) */}
+        <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
+          {/* Status Filter Pills (Left Side) */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {['ALL', 'PENDING', 'PARTIALLY_PAID', 'PAID', 'OVERDUE'].map((st) => {
+              const isActive = selectedStatusFilter === st;
+              return (
+                <button
+                  key={st}
+                  onClick={() => setSelectedStatusFilter(st)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-200/60 border border-slate-200/60'
+                  }`}
+                >
+                  {st.replace('_', ' ')}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Input & Create Order CTA (Right Side Row) */}
+          <div className="flex items-center gap-3 flex-1 max-w-lg md:ml-auto">
             
-            {/* Header Control Row with Create Order CTA */}
-            <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Order & Settlement Engine</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Click any row to inspect line items, payment logs & actions</p>
-              </div>
-
-              {/* Create Order Button */}
-              <button
-                onClick={() => setIsCreateOpen(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-md hover:shadow-lg active:scale-95 transition cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <span className="text-sm">+</span>
-                <span>Create Order</span>
-              </button>
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <span className="absolute left-3.5 top-2 text-slate-400 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Filter by customer or order ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              
-              {/* Status Filter Pills (Left Side) */}
-              <div className="flex items-center gap-1 overflow-x-auto">
-                {['ALL', 'PENDING', 'PARTIALLY_PAID', 'PAID', 'OVERDUE'].map((st) => {
-                  const isActive = selectedStatusFilter === st;
-                  return (
-                    <button
-                      key={st}
-                      onClick={() => setSelectedStatusFilter(st)}
-                      className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer whitespace-nowrap ${
-                        isActive
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'bg-white text-slate-600 hover:bg-slate-200/60 border border-slate-200/60'
-                      }`}
-                    >
-                      {st.replace('_', ' ')}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Create Order Button */}
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow active:scale-95 transition cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <span className="text-sm">+</span>
+              <span>Create Order</span>
+            </button>
 
-              {/* Search (Right Side) */}
-              <div className="relative flex-1 max-w-sm sm:ml-auto">
-                <span className="absolute left-3.5 top-2 text-slate-400 text-xs">🔍</span>
-                <input
-                  type="text"
-                  placeholder="Filter by customer or order ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
+          </div>
 
-            </div>
+        </div>
 
-            {/* Ultra-Clean Orders Table with Status Aligned Middle */}
+        {/* Full Container Width Workspace (Left: Orders Table | Right: Order Details Panel) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Master Column */}
+          <div className="lg:col-span-5">
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
                     <tr>
-                      <th className="py-3.5 px-5 whitespace-nowrap">Order ID</th>
-                      <th className="py-3.5 px-5 whitespace-nowrap">Customer Name</th>
-                      <th className="py-3.5 px-5 text-right whitespace-nowrap">Total Amount</th>
-                      <th className="py-3.5 px-5 text-right whitespace-nowrap">Amount Paid</th>
-                      <th className="py-3.5 px-5 text-center whitespace-nowrap">Status</th>
-                      <th className="py-3.5 px-5 whitespace-nowrap">Due Date</th>
+                      <th className="py-3.5 px-3.5 whitespace-nowrap">Order ID</th>
+                      <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Total</th>
+                      <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Paid</th>
+                      <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-800">
                     {filteredOrders.length > 0 ? (
-                      filteredOrders.map((order) => (
-                        <tr
-                          key={order.id}
-                          onClick={() => setViewingOrder(order)}
-                          className="hover:bg-slate-50/80 cursor-pointer transition group"
-                        >
-                          
-                          <td className="py-4 px-5 font-mono font-bold text-slate-900 group-hover:text-indigo-600 transition whitespace-nowrap flex items-center gap-2">
-                            <span>{order.id}</span>
-                            <span className="text-[10px] font-normal text-slate-400 group-hover:translate-x-0.5 transition">→</span>
-                          </td>
+                      filteredOrders.map((order) => {
+                        const isSelected = viewingOrder?.id === order.id;
+                        return (
+                          <tr
+                            key={order.id}
+                            onClick={() => setViewingOrder(order)}
+                            className={`cursor-pointer transition group ${
+                              isSelected
+                                ? 'bg-indigo-50/80 text-indigo-950 font-bold border-l-4 border-indigo-600'
+                                : 'hover:bg-slate-50/80'
+                            }`}
+                          >
+                            
+                            <td className="py-3.5 px-3.5 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 group-hover:text-indigo-600">
+                                <span>{order.id}</span>
+                                {isSelected && <span className="text-[10px] text-indigo-600">●</span>}
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-medium truncate max-w-32.5">
+                                {order.customerName}
+                              </p>
+                            </td>
 
-                          <td className="py-4 px-5 font-semibold text-slate-900 whitespace-nowrap">
-                            {order.customerName}
-                          </td>
+                            <td className="py-3.5 px-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                              ${(order.totalAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
 
-                          <td className="py-4 px-5 text-right font-bold text-slate-900 whitespace-nowrap">
-                            ${(order.totalAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </td>
+                            <td className="py-3.5 px-3.5 text-right font-semibold text-emerald-600 whitespace-nowrap">
+                              ${(order.totalPaid / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
 
-                          <td className="py-4 px-5 text-right font-semibold text-emerald-600 whitespace-nowrap">
-                            ${(order.totalPaid / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </td>
+                            <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
+                              {getStatusBadge(order.status)}
+                            </td>
 
-                          <td className="py-4 px-5 text-center whitespace-nowrap">
-                            {getStatusBadge(order.status)}
-                          </td>
-
-                          <td className="py-4 px-5 text-slate-500 font-medium whitespace-nowrap">
-                            {order.dueDate}
-                          </td>
-
-                        </tr>
-                      ))
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                        <td colSpan={4} className="py-8 text-center text-slate-400">
                           No orders found matching your search.
                         </td>
                       </tr>
@@ -435,13 +436,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </table>
               </div>
             </div>
+          </div>
 
-          </main>
+          {/* Right Column (Permanent Order Detail Workspace) */}
+          <div className="lg:col-span-7 min-h-130">
+            <OrderDetailPane
+              order={viewingOrder}
+              onClose={() => setViewingOrder(null)}
+              onOpenEditModal={(ord) => setEditingOrder(ord)}
+              onOpenPaymentModal={(ord) => setPaymentOrder(ord)}
+              onDeleteOrder={handleDeleteOrder}
+            />
+          </div>
+
         </div>
 
       </div>
 
-      {/* Modals & Right Slide-Over Drawer */}
+      {/* Action Modals */}
       <CreateOrderModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
@@ -453,15 +465,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         isOpen={!!editingOrder}
         onClose={() => setEditingOrder(null)}
         onUpdateOrder={handleUpdateOrder}
-      />
-
-      <OrderDetailsDrawer
-        order={viewingOrder}
-        isOpen={!!viewingOrder}
-        onClose={() => setViewingOrder(null)}
-        onOpenEditModal={(ord) => setEditingOrder(ord)}
-        onOpenPaymentModal={(ord) => setPaymentOrder(ord)}
-        onDeleteOrder={handleDeleteOrder}
       />
 
       <RecordPaymentModal
