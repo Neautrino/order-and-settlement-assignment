@@ -4,6 +4,7 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fas
 import fastifyJwt from "@fastify/jwt";
 import { authRoutes } from "./routes/auth.routes";
 import { orderRoutes } from "./routes/order.routes";
+import { paymentRoutes } from "./routes/payment.routes";
 
 const PORT = 3000
 
@@ -34,6 +35,10 @@ fastify.register(authRoutes, {
 
 fastify.register(orderRoutes, {
   prefix: "/api/orders"
+})
+
+fastify.register(paymentRoutes, {
+  prefix: "/api/payments"
 })
 
 await connectDb(fastify.log);
