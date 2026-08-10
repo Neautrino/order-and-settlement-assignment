@@ -171,46 +171,68 @@ export async function orderRoutes(app: FastifyInstance) {
         const {id } = request.params;
         const {customerName, dueDate, items} = request.body;
 
-        const order = await prisma.order.findFirst({
-            where: {id, userId: request.user.id},
-            include: {payments: true}
-        })
-
-        if(!order){
-            return reply.status(HTTP_STATUS.NOT_FOUND).send({
-                message: "Order not found"
-            })
-        }
-
-        if(order.payments.length > 0){
-            return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                message: "Cannot update an order that has payments recorded against it"
-            })
-        }
-
-        if(items && items.length > 0) {
-            const totalAmount = items.reduce((sum, item) => sum + BigInt(item.quantity) * BigInt(item.unitPrice), 0n)
-
+        try {
             const updatedOrder = await prisma.$transaction(async (tx) => {
-                await tx.orderItem.deleteMany({
-                    where: {orderId: id}
+                const lockedOrders = await tx.$queryRaw<
+                    Array<{id: string}>>`
+                        SELECT id FROM "Order"
+                        WHERE id = ${id} AND "userId" = ${request.user.id}
+                        FOR UPDATE
+                    `
+
+                if(!lockedOrders || lockedOrders.length === 0 || !lockedOrders[0]){
+                    throw new Error("NOT_FOUND");
+                }
+
+                const payments = await tx.payment.findMany({
+                    where: {orderId: id},
+                    select: { id: true}
                 })
+
+                if(payments.length > 0){
+                    throw new Error("HAS_PAYMENTS")
+                }
+
+                if(items && items.length > 0) {
+                    const totalAmount = items.reduce((sum, item) => sum + BigInt(item.quantity) * BigInt(item.unitPrice), 0n)
+
+                    await tx.orderItem.deleteMany({
+                        where: {orderId: id}
+                    })
+
+                    return tx.order.update({
+                        where: {id},
+                        data: {
+                            ...(customerName && {customerName}),
+                            ...(dueDate && {dueDate: new Date(dueDate)}),
+                            totalAmount,
+                            items: {
+                                createMany: {
+                                    data: items.map((item) => ({
+                                        itemName: item.itemName,
+                                        quantity: item.quantity,
+                                        unitPrice: BigInt(item.unitPrice)
+                                    }))
+                                }
+                            }
+                        },
+                        select: {
+                            id: true,
+                            customerName: true,
+                            status: true,
+                            totalAmount: true,
+                            dueDate: true,
+                            items: true,
+                            updatedAt: true
+                        }
+                    })
+                }
 
                 return tx.order.update({
                     where: {id},
                     data: {
                         ...(customerName && {customerName}),
-                        ...(dueDate && {dueDate: new Date(dueDate)}),
-                        totalAmount,
-                        items: {
-                            createMany: {
-                                data: items.map((item) => ({
-                                    itemName: item.itemName,
-                                    quantity: item.quantity,
-                                    unitPrice: BigInt(item.unitPrice)
-                                }))
-                            }
-                        }
+                        ...(dueDate && { dueDate: new Date(dueDate)}),
                     },
                     select: {
                         id: true,
@@ -219,38 +241,27 @@ export async function orderRoutes(app: FastifyInstance) {
                         totalAmount: true,
                         dueDate: true,
                         items: true,
-                        updatedAt: true
+                        updatedAt: true,
                     }
                 })
             })
 
             return reply.status(HTTP_STATUS.OK).send({
                 message: "Order updated successfully",
-                order: updatedOrder,
+                order: updatedOrder
             })
-        }
-
-        const updatedOrder = await prisma.order.update({
-            where: {id},
-            data: {
-                ...(customerName && {customerName}),
-                ...(dueDate && { dueDate: new Date(dueDate)}),
-            },
-            select: {
-                id: true,
-                customerName: true,
-                status: true,
-                totalAmount: true,
-                dueDate: true,
-                items: true,
-                updatedAt: true,
+        } catch (err: any) {
+            if (err.message === "NOT_FOUND") {
+                return reply.status(HTTP_STATUS.NOT_FOUND).send({message: "Order not found"})
             }
-        })
-        
-        return reply.status(HTTP_STATUS.OK).send({
-            message: "Order updated successfully",
-            order: updatedOrder
-        })
+            if (err.message === "HAS_PAYMENTS") {
+                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
+                    messasge: "Cannot update an order that has payments record"
+                })
+            }
+
+            throw err;
+        }        
     })
 
     fastify.delete("/:id", {
@@ -258,28 +269,45 @@ export async function orderRoutes(app: FastifyInstance) {
         schema: { params: orderParamsSchema}
     }, async ( request, reply) => {
         const {id} = request.params;
-        const order = await prisma.order.findFirst({
-            where: {
-                id: id,
-                userId: request.user.id
-            },
-            include: {payments: true}
-        })
 
-        if (!order){
-            return reply.status(HTTP_STATUS.NOT_FOUND).send({
-                message: "Order not found"
+        try{
+            await prisma.$transaction(async (tx) => {
+                const lockedOrders = await tx.$queryRaw<Array<{id: string}>>`
+                    SELECT id FROM "Order" WHERE id = ${id} AND "userId" = ${request.user.id} FOR UPDATE
+                `;
+
+                if(!lockedOrders || lockedOrders.length === 0 || !lockedOrders[0]){
+                    throw new Error("NOT_FOUND");
+                }
+
+                const payments = await tx.payment.findMany({
+                    where: { orderId: id},
+                    select: { id: true}
+                })
+
+                if (payments.length > 0) {
+                    throw new Error("HAS_PAYMENTS");
+                }
+
+                await tx.order.delete({
+                    where: {id}
+                })
+
+                return reply.status(HTTP_STATUS.OK).send({
+                    message: "Order deleted successfully"
+                })
             })
-        }
+        } catch (err: any) {
+            if(err.message === "NOT_FOUND") {
+                return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found" });
+            }
+            if (err.message === "HAS_PAYMENTS") {
+                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
+                    message: "Cannot delete an order that has payments recorded against it"
+                })
+            }
 
-        if(order.payments.length > 0){
-            return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                message: "Cannot delete an order that has payments recorded against it"
-            })
+            throw err;
         }
-        
-        await prisma.order.delete({ where: {id}})
-
-        return reply.status(HTTP_STATUS.OK).send({message: "Order deleted successfully"})
     })
 }

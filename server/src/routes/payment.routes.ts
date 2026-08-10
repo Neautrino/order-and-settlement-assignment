@@ -64,37 +64,87 @@ export async function paymentRoutes(app: FastifyInstance) {
             })
         }
 
-        const newTotalPaid = balance.totalPaid + paymentAmount
-        const newStatus = newTotalPaid === balance.totalAmount ? "PAID" : "PARTIALLY_PAID"
+        try {
+            const result = await prisma.$transaction(async (tx) => {
 
-        const payment = await prisma.$transaction(async (tx) => {
-            const p = await tx.payment.create({
-                data: {
-                    orderId: balance.order.id,
-                    amount: paymentAmount,
-                    note: note || "",
-                }, 
-                select: {
-                    id: true,
-                    orderId: true,
-                    amount: true,
-                    note: true,
-                    paymentDate: true,
+                const lockedOrders = await tx.$queryRaw<Array<{
+                    id: string;
+                    totalAmount: bigint;
+                    status: string;
+                    dueDate: Date;
+                }>>`
+                    SELECT id, "totalAmount", status, "dueDate" FROM "Order"
+                    WHERE id = ${orderId} AND "userId" = ${request.user.id}
+                    FOR UPDATE
+                `
+
+                if(!lockedOrders || lockedOrders.length === 0 || !lockedOrders[0]) {
+                    throw new Error("NOT_FOUND");
                 }
+                const order = lockedOrders[0];
+                if (!order) throw new Error("NOT_FOUND");
+
+                const payments = await tx.payment.findMany({
+                    where: {orderId: order.id},
+                    select: {amount: true}
+                })
+
+                const currentPaid = payments.reduce((sum, p) => sum + p.amount, 0n);
+                const remainingAmount = order.totalAmount - currentPaid;
+
+                if(order.status === "PAID"){
+                    throw new Error("ALREADY_PAID")
+                }
+
+                if(paymentAmount > remainingAmount) {
+                    throw new Error(`EXCEEDS_BALANCE:${remainingAmount}`);
+                }
+
+                const newTotalPaid = currentPaid + paymentAmount;
+                const newStatus = newTotalPaid === order.totalAmount ? "PAID" : "PARTIALLY_PAID";
+
+                const payment = await tx.payment.create({
+                    data: {
+                        orderId: order.id,
+                        amount: paymentAmount,
+                        note: note || "",
+                    }, 
+                    select: {
+                        id: true,
+                        orderId: true,
+                        amount: true,
+                        note: true,
+                        paymentDate: true,
+                    }
+                })
+
+                await tx.order.update({
+                    where: {id: order.id},
+                    data: {status: newStatus}
+                })
+
+                return {payment, newStatus};
             })
 
-            await tx.order.update({
-                where: {id: balance.order.id},
-                data: {status: newStatus}
+            return reply.status(HTTP_STATUS.CREATED).send({
+                message: "Payment recorded successfully",
+                orderStatus: result.newStatus,
+                payment: result.payment,
             })
-
-            return p;
-        })
-
-        return reply.status(HTTP_STATUS.CREATED).send({
-            message: "Payment recorded successfully",
-            orderStatus: newStatus,
-            payment,
-        })
+        } catch (err: any) {
+            if (err.message === "NOT_FOUND") {
+                return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found" });
+            }
+            if (err.message === "ALREADY_PAID") {
+                return reply.status(HTTP_STATUS.BAD_REQUEST).send({ message: "Order is already fully paid" });
+            }
+            if (err.message?.startsWith("EXCEEDS_BALANCE")) {
+                const remaining = err.message.split(":")[1];
+                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
+                    message: `Payment amount (${paymentAmount}) exceeds remaining balance (${remaining})`
+                });
+            }
+            throw err;
+        }
     })
 }
