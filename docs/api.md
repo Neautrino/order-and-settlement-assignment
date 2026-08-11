@@ -1,0 +1,495 @@
+# Order & Settlements API Documentation
+
+Welcome to the **Order & Settlements API** documentation. This document provides technical specifications, endpoint descriptions, request/response schemas, validation rules, and integration examples for the backend service.
+
+> 💡 **Data Models & Database Schema**: For detailed Entity-Relationship (ER) diagrams, database tables, and entity definitions, please refer to [docs/data-model.md](file:///home/neautrino/Code/projects/order-and-settlements/docs/data-model.md).
+
+---
+
+## 📋 Table of Contents
+- [Architecture & Overview](#-architecture--overview)
+- [Authentication](#-authentication)
+- [Error Handling](#-error-handling)
+- [API Endpoints](#-api-endpoints)
+  - [Authentication API (`/api/auth`)](#1-authentication-api-apiauth)
+    - [`POST /api/auth/register`](#post-apiauthregister)
+    - [`POST /api/auth/login`](#post-apiauthlogin)
+    - [`GET /api/auth/me`](#get-apiauthme)
+  - [Order Management API (`/api/orders`)](#2-order-management-api-apiorders)
+    - [`POST /api/orders`](#post-apiorders)
+    - [`GET /api/orders`](#get-apiorders)
+    - [`GET /api/orders/:id`](#get-apiordersid)
+    - [`PATCH /api/orders/:id`](#patch-apiordersid)
+    - [`DELETE /api/orders/:id`](#delete-apiordersid)
+  - [Payments & Settlements API (`/api/payments`)](#3-payments--settlements-api-apipayments)
+    - [`GET /api/payments/calculate/:orderId`](#get-apipaymentscalculateorderid)
+    - [`POST /api/payments`](#post-apipayments)
+- [Business Rules & Validation Constraints](#-business-rules--validation-constraints)
+
+---
+
+## 🏗 Architecture & Overview
+
+- **Base URL**: `http://localhost:3000`
+- **Data Format**: `application/json`
+- **Monetary Values**: Stored and returned as **Integers** representing the lowest currency denomination (e.g. **paise / cents**; `1000` = ₹10.00 / $10.00) to prevent floating-point inaccuracies.
+- **Timestamps**: Standard ISO 8601 formatted strings in UTC (e.g., `2026-08-15T00:00:00.000Z`).
+- **Data Schema Reference**: See [docs/data-model.md](file:///home/neautrino/Code/projects/order-and-settlements/docs/data-model.md) for full ER diagrams and table structures.
+
+---
+
+## 🔑 Authentication
+
+The API uses **JWT (JSON Web Tokens)** for authentication.
+
+- Protected endpoints require an HTTP `Authorization` header with a Bearer token:
+  ```http
+  Authorization: Bearer <your_jwt_token>
+  ```
+- **Token Expiry**: `24 hours`
+- User ownership is strictly enforced across all order and payment resources.
+
+---
+
+## ⚠️ Error Handling
+
+The API returns standard HTTP status codes along with descriptive JSON error payloads:
+
+```json
+{
+  "message": "Detailed description of the error"
+}
+```
+
+| HTTP Status Code | Description | Typical Cause |
+| :--- | :--- | :--- |
+| **`200 OK`** | Request succeeded | Successful GET, PATCH, or DELETE operation |
+| **`201 Created`** | Resource created | Successful registration, order creation, or payment submission |
+| **`400 Bad Request`** | Validation failure or business logic violation | Invalid body, past due date, attempting overpayment, updating order with payments |
+| **`401 Unauthorized`** | Authentication missing or invalid | Missing/expired JWT token or invalid login credentials |
+| **`404 Not Found`** | Resource not found | Requesting an order that does not exist or does not belong to the user |
+| **`500 Internal Server Error`** | Unhandled server error | Internal server crash or unhandled database issue |
+
+---
+
+## 🚀 API Endpoints
+
+### 1. Authentication API (`/api/auth`)
+
+#### `POST /api/auth/register`
+Creates a new user account and generates an initial JWT authentication token.
+
+- **Authentication**: None
+- **Headers**: `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Validation Constraints**:
+- `email`: Valid email format (required)
+- `password`: String, minimum 6 characters (required)
+
+**Response `201 Created`**:
+```json
+{
+  "message": "User registered successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+    "email": "user@example.com",
+    "createdAt": "2026-08-11T08:00:00.000Z"
+  }
+}
+```
+
+**Response `400 Bad Request`**:
+```json
+{
+  "message": "User already exists with this email"
+}
+```
+
+---
+
+#### `POST /api/auth/login`
+Authenticates existing user credentials and returns a JWT access token.
+
+- **Authentication**: None
+- **Headers**: `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response `200 OK`**:
+```json
+{
+  "message": "Login successful",
+  "user": {
+    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+    "email": "user@example.com"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response `401 Unauthorized`**:
+```json
+{
+  "error": "Invalid email or password"
+}
+```
+
+---
+
+#### `GET /api/auth/me`
+Retrieves the profile of the currently authenticated user.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+
+**Response `200 OK`**:
+```json
+{
+  "user": {
+    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+    "email": "user@example.com"
+  }
+}
+```
+
+---
+
+### 2. Order Management API (`/api/orders`)
+
+#### `POST /api/orders`
+Creates a new order with line items. Total amount is calculated automatically on the server.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Headers**: `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "customerName": "Acme Corporation",
+  "dueDate": "2026-08-25T00:00:00.000Z",
+  "items": [
+    {
+      "itemName": "Web Design Services",
+      "quantity": 1,
+      "unitPrice": 1500000
+    },
+    {
+      "itemName": "Cloud Hosting Setup",
+      "quantity": 2,
+      "unitPrice": 250000
+    }
+  ]
+}
+```
+
+**Validation Constraints**:
+- `customerName`: String, non-empty (required)
+- `dueDate`: ISO date string, **must be strictly in the future** (after current date)
+- `items`: Array with at least 1 item
+  - `itemName`: String, non-empty
+  - `quantity`: Positive integer (>= 1)
+  - `unitPrice`: Positive integer in lowest currency units (> 0)
+
+**Response `201 Created`**:
+```json
+{
+  "message": "Order created successfully",
+  "order": {
+    "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+    "customerName": "Acme Corporation",
+    "status": "PENDING",
+    "totalAmount": 2000000,
+    "dueDate": "2026-08-25T00:00:00.000Z",
+    "createdAt": "2026-08-11T08:15:00.000Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/orders`
+Fetches a paginated list of orders belonging to the authenticated user. Computes real-time status, total paid, and remaining balance dynamically.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Query Parameters**:
+
+| Parameter | Type | Default | Constraints | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `page` | integer | `1` | `min: 1` | Page number for pagination |
+| `limit` | integer | `10` | `min: 1, max: 100` | Number of items per page |
+
+**Example Request**:
+```http
+GET /api/orders?page=1&limit=10 HTTP/1.1
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`**:
+```json
+{
+  "data": [
+    {
+      "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+      "customerName": "Acme Corporation",
+      "status": "PARTIALLY_PAID",
+      "totalAmount": 2000000,
+      "totalPaid": 500000,
+      "remainingAmount": 1500000,
+      "dueDate": "2026-08-25T00:00:00.000Z",
+      "items": [
+        {
+          "id": "c7112093-41e9-4e76-8ff4-93e1b12390af",
+          "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+          "itemName": "Web Design Services",
+          "quantity": 1,
+          "unitPrice": 1500000,
+          "createdAt": "2026-08-11T08:15:00.000Z",
+          "updatedAt": "2026-08-11T08:15:00.000Z"
+        }
+      ],
+      "payments": [
+        {
+          "id": "e92a40b1-1234-4567-89ab-cdef01234567",
+          "amount": 500000,
+          "note": "Advance payment",
+          "paymentDate": "2026-08-11T08:30:00.000Z"
+        }
+      ],
+      "createdAt": "2026-08-11T08:15:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "totalOrders": 1,
+    "totalPages": 1,
+    "hasMore": false
+  }
+}
+```
+
+---
+
+#### `GET /api/orders/:id`
+Retrieves detailed information for a specific order.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Path Parameters**:
+  - `id`: UUID (Order ID)
+
+**Response `200 OK`**:
+```json
+{
+  "message": "Order fetched successfully",
+  "order": {
+    "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+    "customerName": "Acme Corporation",
+    "status": "PARTIALLY_PAID",
+    "totalAmount": 2000000,
+    "totalPaid": 500000,
+    "remainingAmount": 1500000,
+    "dueDate": "2026-08-25T00:00:00.000Z",
+    "items": [ ... ],
+    "payments": [ ... ],
+    "createdAt": "2026-08-11T08:15:00.000Z",
+    "updatedAt": "2026-08-11T08:30:00.000Z"
+  }
+}
+```
+
+**Response `404 Not Found`**:
+```json
+{
+  "message": "Order not found"
+}
+```
+
+---
+
+#### `PATCH /api/orders/:id`
+Updates an existing order's customer name, due date, or line items.
+
+> ⚠️ **Restriction**: An order **cannot** be updated if payments have already been recorded against it.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Path Parameters**: `id` (UUID)
+- **Headers**: `Content-Type: application/json`
+
+**Request Body (Partial update allowed)**:
+```json
+{
+  "customerName": "Acme Holdings Ltd",
+  "dueDate": "2026-08-30T00:00:00.000Z"
+}
+```
+
+**Response `200 OK`**:
+```json
+{
+  "message": "Order updated successfully",
+  "order": {
+    "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+    "customerName": "Acme Holdings Ltd",
+    "status": "PENDING",
+    "totalAmount": 2000000,
+    "dueDate": "2026-08-30T00:00:00.000Z",
+    "items": [ ... ],
+    "updatedAt": "2026-08-11T09:00:00.000Z"
+  }
+}
+```
+
+**Response `400 Bad Request`**:
+```json
+{
+  "message": "Cannot update an order that has payments record"
+}
+```
+
+---
+
+#### `DELETE /api/orders/:id`
+Deletes an existing order and its associated line items.
+
+> ⚠️ **Restriction**: An order **cannot** be deleted if payments have already been recorded against it.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Path Parameters**: `id` (UUID)
+
+**Response `200 OK`**:
+```json
+{
+  "message": "Order deleted successfully"
+}
+```
+
+**Response `400 Bad Request`**:
+```json
+{
+  "message": "Cannot delete an order that has payments recorded against it"
+}
+```
+
+**Response `404 Not Found`**:
+```json
+{
+  "message": "Order not found"
+}
+```
+
+---
+
+### 3. Payments & Settlements API (`/api/payments`)
+
+#### `GET /api/payments/calculate/:orderId`
+Calculates real-time financial balance metrics and status for an order prior to payment submission.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Path Parameters**:
+  - `orderId`: UUID (Order ID)
+
+**Response `200 OK`**:
+```json
+{
+  "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+  "status": "PARTIALLY_PAID",
+  "totalAmount": 2000000,
+  "totalPaid": 500000,
+  "remainingAmount": 1500000
+}
+```
+
+**Response `404 Not Found`**:
+```json
+{
+  "message": "Order not found"
+}
+```
+
+---
+
+#### `POST /api/payments`
+Records a payment (partial or full) against an open order.
+
+- **Authentication**: Required (`Authorization: Bearer <token>`)
+- **Headers**: `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+  "amount": 1500000,
+  "note": "Final settlement via wire transfer"
+}
+```
+
+**Validation & Rules**:
+- `orderId`: UUID format (required)
+- `amount`: Positive integer in lowest currency units (required)
+- `note`: String, optional
+- Cannot submit payment for an order with status `PAID`.
+- Payment amount cannot exceed the `remainingAmount` due on the order.
+
+**Response `201 Created`**:
+```json
+{
+  "message": "Payment recorded successfully",
+  "orderStatus": "PAID",
+  "payment": {
+    "id": "f83b1022-7711-4b2a-a92d-9876543210fe",
+    "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+    "amount": 1500000,
+    "note": "Final settlement via wire transfer",
+    "paymentDate": "2026-08-11T09:15:00.000Z"
+  }
+}
+```
+
+**Response `400 Bad Request` (Order fully paid)**:
+```json
+{
+  "message": "Order is already fully paid"
+}
+```
+
+**Response `400 Bad Request` (Overpayment attempt)**:
+```json
+{
+  "message": "Payment amount (2000000) exceeds remaining balance (1500000)"
+}
+```
+
+---
+
+## 🔒 Business Rules & Validation Constraints
+
+1. **Due Date Validation**:
+   - Order creation and updates strictly require `dueDate` to be a future date (`dueDate > today`). Creation with today or past dates will fail validation (`400 Bad Request`).
+
+2. **Real-time Status Resolution**:
+   - Status is calculated dynamically:
+     - `PAID`: `totalPaid == totalAmount`
+     - `OVERDUE`: `totalPaid < totalAmount` AND `dueDate < today`
+     - `PARTIALLY_PAID`: `0 < totalPaid < totalAmount` AND `dueDate >= today`
+     - `PENDING`: `totalPaid == 0` AND `dueDate >= today`
+   - Lazy background sync persists status transitions to `OVERDUE` in the database asynchronously when queried.
+
+3. **Immutability Protection**:
+   - Orders with recorded payments (`payments.length > 0`) cannot be edited (`PATCH`) or removed (`DELETE`). This enforces audit trail compliance for settlements.
+
+4. **Race-Condition & Overpayment Safety**:
+   - Payment creation executes within a database transaction utilizing **pessimistic row locking** (`SELECT FOR UPDATE`). Concurrent payment submissions for the same order are serialized safely to prevent double-spending or balance corruption.
