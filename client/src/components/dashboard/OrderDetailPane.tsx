@@ -24,9 +24,9 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
 
   if (!order) {
     return (
-      <div className="h-full bg-slate-50/50 border border-slate-100 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-        <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 text-slate-400">
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="h-full bg-slate-50/50 border border-slate-100 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 text-slate-400">
+          <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
@@ -45,24 +45,24 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'PAID':
-        return <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PAID</span>;
+        return <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PAID</span>;
       case 'PARTIALLY_PAID':
-        return <span className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PARTIAL</span>;
+        return <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PARTIAL</span>;
       case 'OVERDUE':
-        return <span className="bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">OVERDUE</span>;
+        return <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">OVERDUE</span>;
       default:
-        return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PENDING</span>;
+        return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-extrabold tracking-wide shrink-0 transition-colors duration-700">PENDING</span>;
     }
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xl space-y-6 flex flex-col justify-between h-full">
+    <div id="order-detail-pane" className="bg-white border border-slate-200/80 rounded-3xl p-4 sm:p-6 shadow-xl space-y-5 sm:space-y-6 flex flex-col justify-between h-full scroll-mt-6">
       
       {/* Top Bar: Order ID, Status, and Deselect Button */}
-      <div className="space-y-4 border-b border-slate-100 pb-5">
+      <div className="space-y-3 sm:space-y-4 border-b border-slate-100 pb-4 sm:pb-5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-mono text-xs font-bold bg-slate-900 text-white px-3 py-1 rounded-xl shadow-xs shrink-0 transition-all duration-300">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <span className="font-mono text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded-xl shadow-xs shrink-0 transition-all duration-300">
               {formattedDisplayId}
             </span>
             {getStatusBadge(order.status)}
@@ -70,7 +70,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
 
           <button
             onClick={onClose}
-            className="text-xs font-bold text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/70 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="text-xs font-bold text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/70 px-2.5 py-1 rounded-xl transition cursor-pointer flex items-center gap-1 shrink-0"
             title="Deselect order"
           >
             <span>Close</span>
@@ -79,13 +79,13 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
         </div>
 
         <div key={order.id} className="min-w-0 animate-in fade-in duration-700">
-          <h3 className="text-xl font-black text-slate-900 tracking-tight truncate transition-all duration-700" title={order.customerName}>
+          <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight truncate transition-all duration-700" title={order.customerName}>
             {order.customerName}
           </h3>
           <p className="text-[11px] font-mono text-slate-400 mt-0.5 select-all break-all truncate transition-all duration-700" title={order.id}>
             <span className="font-semibold text-slate-400/80">ID:</span> {order.id}
           </p>
-          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium mt-2 flex-wrap transition-all duration-700">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-500 font-medium mt-2 flex-wrap transition-all duration-700">
             <div className="flex items-center gap-1 text-slate-500">
               <span className="text-[11px] text-slate-400">Created:</span>
               <span className="font-semibold text-slate-700">{formatDate(order.createdAt)}</span>
@@ -106,10 +106,10 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="space-y-6 flex-1 overflow-y-auto pr-1">
+      <div className="space-y-5 sm:space-y-6 flex-1 overflow-y-auto pr-1">
         
-        {/* Financial Settlement Card with Smooth Width Transition */}
-        <div className="bg-slate-50/90 border border-slate-200/70 p-4 rounded-2xl space-y-3">
+        {/* Financial Settlement Card */}
+        <div className="bg-slate-50/90 border border-slate-200/70 p-3.5 sm:p-4 rounded-2xl space-y-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-slate-700">Settlement Progress</span>
             <span className="font-extrabold text-slate-900 transition-all duration-500">{paidPercent}% Paid</span>
@@ -124,31 +124,31 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2 text-center pt-1">
-            <div className="bg-white p-2.5 rounded-xl border border-slate-100 min-w-0">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</p>
-              <p className="text-xs font-black text-slate-900 mt-0.5 truncate transition-all duration-700">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center pt-1">
+            <div className="bg-white p-2 sm:p-2.5 rounded-xl border border-slate-100 min-w-0">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</p>
+              <p className="text-[11px] sm:text-xs font-black text-slate-900 mt-0.5 truncate transition-all duration-700">
                 {formatCurrency(order.totalAmount)}
               </p>
             </div>
 
-            <div className="bg-white p-2.5 rounded-xl border border-slate-100 min-w-0">
-              <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Paid</p>
-              <p className="text-xs font-black text-emerald-600 mt-0.5 truncate transition-all duration-700">
+            <div className="bg-white p-2 sm:p-2.5 rounded-xl border border-slate-100 min-w-0">
+              <p className="text-[9px] sm:text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Paid</p>
+              <p className="text-[11px] sm:text-xs font-black text-emerald-600 mt-0.5 truncate transition-all duration-700">
                 {formatCurrency(order.totalPaid)}
               </p>
             </div>
 
-            <div className="bg-white p-2.5 rounded-xl border border-slate-100 min-w-0">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Due</p>
-              <p className="text-xs font-black text-slate-800 mt-0.5 truncate transition-all duration-700">
+            <div className="bg-white p-2 sm:p-2.5 rounded-xl border border-slate-100 min-w-0">
+              <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider">Due</p>
+              <p className="text-[11px] sm:text-xs font-black text-slate-800 mt-0.5 truncate transition-all duration-700">
                 {formatCurrency(order.remainingAmount)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Itemized Line Items Table with Top-to-Bottom Unfolding Animation */}
+        {/* Itemized Line Items Table */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Line Items</h4>
@@ -157,14 +157,14 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
 
           <div
             key={`items-${order.id}`}
-            className="bg-slate-50/50 rounded-2xl border border-slate-100 shadow-xs animate-unfold-down"
+            className="bg-slate-50/50 rounded-2xl border border-slate-100 shadow-xs overflow-x-auto animate-unfold-down"
           >
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[280px]">
               <thead className="bg-slate-100/70 text-slate-500 font-semibold border-b border-slate-100">
                 <tr>
                   <th className="py-2.5 px-3">Item Description</th>
-                  <th className="py-2.5 px-3 text-center">Qty</th>
-                  <th className="py-2.5 px-3 text-right">Price</th>
+                  <th className="py-2.5 px-2 text-center">Qty</th>
+                  <th className="py-2.5 px-2 text-right">Price</th>
                   <th className="py-2.5 px-3 text-right">Subtotal</th>
                 </tr>
               </thead>
@@ -172,11 +172,11 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
                 {order.items && order.items.length > 0 ? (
                   order.items.map((item) => (
                     <tr key={item.id} className="hover:bg-white transition-colors duration-200">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900 max-w-37.5 sm:max-w-50 truncate" title={item.itemName}>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900 max-w-32 sm:max-w-48 truncate" title={item.itemName}>
                         {item.itemName}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono">{item.quantity}</td>
-                      <td className="py-2.5 px-3 text-right font-mono whitespace-nowrap">{formatCurrency(item.unitPrice)}</td>
+                      <td className="py-2.5 px-2 text-center font-mono">{item.quantity}</td>
+                      <td className="py-2.5 px-2 text-right font-mono whitespace-nowrap">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                         {formatCurrency(item.quantity * item.unitPrice)}
                       </td>
@@ -194,10 +194,9 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
           </div>
         </div>
 
-        {/* Collapsible Payment History Accordion with Smooth Fade Transition */}
+        {/* Payment History Accordion */}
         <div key={`payments-${order.id}`} className="space-y-2 animate-in fade-in duration-300">
           
-          {/* Accordion Toggle Header */}
           <button
             type="button"
             onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
@@ -220,7 +219,6 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
             </div>
           </button>
 
-          {/* Accordion Content with Smooth Height & Opacity Transition */}
           <div
             className={`grid transition-all duration-300 ease-in-out ${
               isPaymentsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
@@ -240,7 +238,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-slate-900">{formatCurrency(p.amount)}</p>
                           <p 
-                            className="text-[10px] text-slate-400 font-medium truncate max-w-50 sm:max-w-75" 
+                            className="text-[10px] text-slate-400 font-medium truncate max-w-40 sm:max-w-64" 
                             title={`${formattedNote} • ${formattedDate}`}
                           >
                             {formattedNote} • {formattedDate}
@@ -316,3 +314,4 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
     </div>
   );
 };
+

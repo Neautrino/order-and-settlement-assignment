@@ -99,23 +99,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center my-auto py-4">
         
         {/* Left Side: Headline & Floating SaaS Dashboard Widget Preview */}
-        <div className="lg:col-span-6 space-y-8 pr-0 lg:pr-6">
+        <div className="lg:col-span-6 space-y-6 sm:space-y-8 pr-0 lg:pr-6">
           
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
-              Financial clarity today <br />
+          <div className="space-y-3 sm:space-y-4">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+              Financial clarity today <br className="hidden sm:inline" />
               <span className="bg-clip-text text-transparent bg-linear-to-r from-slate-900 via-slate-800 to-indigo-900">
                 growth tomorrow
               </span>
             </h1>
 
-            <p className="text-base text-slate-600 leading-relaxed max-w-xl">
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
               DummyPay is the all-in-one platform for modern businesses to manage orders, process payments, and scale with confidence.
             </p>
           </div>
 
-          {/* Floating Glassmorphism SaaS Widget Preview */}
-          <div className="bg-white/80 backdrop-blur-xl border border-white/90 p-6 rounded-3xl shadow-2xl space-y-5 max-w-md">
+          {/* Floating Glassmorphism SaaS Widget Preview (Hidden on small mobile screens) */}
+          <div className="hidden sm:block bg-white/80 backdrop-blur-xl border border-white/90 p-5 sm:p-6 rounded-3xl shadow-2xl space-y-5 max-w-md">
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-700 pt-2">
+          <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-700 pt-2">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
@@ -197,7 +197,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
         {/* Right Side: Floating Card Form */}
         <div className="lg:col-span-6 flex justify-center lg:justify-end">
-          <div className="w-full max-w-md bg-white/90 backdrop-blur-xl border border-white/90 rounded-3xl p-8 sm:p-10 shadow-2xl relative z-20">
+          <div className="w-full max-w-md bg-white/90 backdrop-blur-xl border border-white/90 rounded-3xl p-6 sm:p-10 shadow-2xl relative z-20">
             
             {/* Mode Switcher Tabs */}
             <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1.5 rounded-2xl mb-6">

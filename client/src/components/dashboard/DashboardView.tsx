@@ -118,6 +118,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const handleSelectOrderRow = async (order: Order) => {
     setViewingOrder(order);
+
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('order-detail-pane')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+
     try {
       const fullDetail = await fetchOrderById(order.id);
       setViewingOrder((current) => (current?.id === order.id ? fullDetail : current));

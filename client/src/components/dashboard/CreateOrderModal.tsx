@@ -198,56 +198,63 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
             <div className="space-y-3">
               {items.map((item, index) => (
-                <div key={index} className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex-1">
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-100 relative">
+                  <div className="flex-1 w-full">
+                    <label className="block sm:hidden text-[10px] font-bold text-slate-500 mb-1">Item Name</label>
                     <input
                       type="text"
                       required
                       placeholder="Item Name (e.g. Design License)"
                       value={item.itemName}
                       onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
 
-                  <div className="w-20">
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-slate-900"
-                    />
-                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex-1 sm:w-20">
+                      <label className="block sm:hidden text-[10px] font-bold text-slate-500 mb-1">Qty</label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
 
-                  <div className="w-28 relative">
-                    <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-semibold">$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
-                      placeholder="Unit Price"
-                      value={item.unitPrice}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                    />
-                  </div>
+                    <div className="flex-1 sm:w-28 relative">
+                      <label className="block sm:hidden text-[10px] font-bold text-slate-500 mb-1">Unit Price ($)</label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-semibold">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          required
+                          placeholder="Unit Price"
+                          value={item.unitPrice}
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
+                          onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                        />
+                      </div>
+                    </div>
 
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(index)}
-                      className="text-slate-400 hover:text-rose-600 p-1 transition cursor-pointer"
-                      title="Remove Item"
-                    >
-                      🗑️
-                    </button>
-                  )}
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        className="text-slate-400 hover:text-rose-600 p-1.5 transition cursor-pointer self-end sm:self-center shrink-0"
+                        title="Remove Item"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

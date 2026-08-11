@@ -47,9 +47,9 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Sidebar */}
-          <aside className="lg:col-span-3 bg-slate-50/70 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between">
+          <aside className="lg:col-span-3 bg-slate-50/70 border border-slate-100 rounded-2xl p-3 sm:p-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2.5 px-3 py-2 mb-6">
+              <div className="flex items-center gap-2.5 px-2 py-1 mb-3 lg:mb-6">
                 <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -58,7 +58,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
                 <span className="font-bold text-slate-900 tracking-tight">DummyPay</span>
               </div>
 
-              <nav className="space-y-1">
+              <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
                 {navItems.map((item) => {
                   const isActive = activeTab === item;
                   return (
@@ -72,7 +72,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
                           onActionClick(`Switched to ${item} view`);
                         }
                       }}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                      className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition shrink-0 whitespace-nowrap lg:w-full ${
                         isActive 
                           ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60 font-semibold' 
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -86,7 +86,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
               </nav>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between px-2 cursor-pointer" onClick={() => onNavigateDashboard ? onNavigateDashboard() : onActionClick("Business Profile settings")}>
+            <div className="hidden lg:flex mt-8 pt-4 border-t border-slate-200/60 items-center justify-between px-2 cursor-pointer" onClick={() => onNavigateDashboard ? onNavigateDashboard() : onActionClick("Business Profile settings")}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs">
                   DP

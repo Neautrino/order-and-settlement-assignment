@@ -27,25 +27,25 @@ export const OrdersMasterTable: React.FC<OrdersMasterTableProps> = ({
     switch (status) {
       case 'PAID':
         return (
-          <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
+          <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
             PAID
           </span>
         );
       case 'PARTIALLY_PAID':
         return (
-          <span className="inline-block bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
+          <span className="inline-block bg-amber-50 text-amber-700 border border-amber-200 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
             PARTIAL
           </span>
         );
       case 'OVERDUE':
         return (
-          <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
+          <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
             OVERDUE
           </span>
         );
       default:
         return (
-          <span className="inline-block bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
+          <span className="inline-block bg-slate-100 text-slate-700 border border-slate-200 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide">
             PENDING
           </span>
         );
@@ -60,14 +60,14 @@ export const OrdersMasterTable: React.FC<OrdersMasterTableProps> = ({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
             <tr>
-              <th className="py-3.5 px-3.5 whitespace-nowrap">Order ID</th>
-              <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Total</th>
-              <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Paid</th>
-              <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Status</th>
+              <th className="py-3 px-2.5 sm:px-3.5 whitespace-nowrap">Order / Customer</th>
+              <th className="py-3 px-2.5 sm:px-3.5 text-right whitespace-nowrap">Total</th>
+              <th className="py-3 px-2.5 sm:px-3.5 text-right whitespace-nowrap hidden sm:table-cell">Paid</th>
+              <th className="py-3 px-2.5 sm:px-3.5 text-center whitespace-nowrap">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -85,25 +85,25 @@ export const OrdersMasterTable: React.FC<OrdersMasterTableProps> = ({
                         : 'hover:bg-slate-50/80'
                     }`}
                   >
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3 px-2.5 sm:px-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 group-hover:text-indigo-600">
                         <span>{displayId}</span>
                         {isSelected && <span className="text-[10px] text-indigo-600">●</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium truncate max-w-32.5">
+                      <p className="text-[11px] text-slate-500 font-medium truncate max-w-28 sm:max-w-36">
                         {order.customerName}
                       </p>
                     </td>
 
-                    <td className="py-3.5 px-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                    <td className="py-3 px-2.5 sm:px-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
                       {formatCurrency(order.totalAmount)}
                     </td>
 
-                    <td className="py-3.5 px-3.5 text-right font-semibold text-emerald-600 whitespace-nowrap">
+                    <td className="py-3 px-2.5 sm:px-3.5 text-right font-semibold text-emerald-600 whitespace-nowrap hidden sm:table-cell">
                       {formatCurrency(order.totalPaid)}
                     </td>
 
-                    <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
+                    <td className="py-3 px-2.5 sm:px-3.5 text-center whitespace-nowrap">
                       {getStatusBadge(order.status)}
                     </td>
                   </tr>
@@ -141,4 +141,5 @@ export const OrdersMasterTable: React.FC<OrdersMasterTableProps> = ({
     </div>
   );
 };
+
 
