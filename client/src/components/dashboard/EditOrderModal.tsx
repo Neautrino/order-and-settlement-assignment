@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderItem } from '../../types/domain';
 import { formatCurrency, centsToDollars, dollarsToCents } from '../../utils/currency';
+import { DatePickerField } from '../ui/DatePickerField';
 
 interface EditOrderModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdateOrder: (orderId: string, updatedData: { customerName?: string; dueDate?: string; items?: OrderItem[] }) => void;
+}
+
+interface FormItem {
+  id?: string;
+  itemName: string;
+  quantity: string | number;
+  unitPrice: string | number;
 }
 
 export const EditOrderModal: React.FC<EditOrderModalProps> = ({
@@ -17,15 +25,48 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 }) => {
   const [customerName, setCustomerName] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [items, setItems] = useState<OrderItem[]>([]);
+  const [items, setItems] = useState<FormItem[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // System dates for minimum date constraint
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  // Prevent background page from scrolling when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (order) {
       setCustomerName(order.customerName);
       setDueDate(order.dueDate);
-      setItems(order.items || [
-        { itemName: 'Default Order Item', quantity: 1, unitPrice: order.totalAmount }
-      ]);
+      setErrorMsg(null);
+      if (order.items && order.items.length > 0) {
+        setItems(
+          order.items.map((it) => ({
+            id: it.id,
+            itemName: it.itemName,
+            quantity: String(it.quantity),
+            unitPrice: centsToDollars(it.unitPrice).toFixed(2),
+          }))
+        );
+      } else {
+        setItems([
+          { itemName: 'Default Order Item', quantity: '1', unitPrice: centsToDollars(order.totalAmount).toFixed(2) }
+        ]);
+      }
     }
   }, [order]);
 
@@ -35,7 +76,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
 
   const handleAddItem = () => {
     if (hasPaymentsRecorded) return;
-    setItems([...items, { itemName: '', quantity: 1, unitPrice: 1000 }]);
+    setItems([...items, { itemName: '', quantity: '1', unitPrice: '10.00' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -43,7 +84,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof FormItem, value: any) => {
     if (hasPaymentsRecorded) return;
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
@@ -51,26 +92,46 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   };
 
   const calculatedTotalCents = items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.unitPrice) || 0;
-    return sum + qty * price;
+    const qty = Math.max(0, parseInt(String(item.quantity)) || 0);
+    const priceDollars = parseFloat(String(item.unitPrice)) || 0;
+    const priceCents = dollarsToCents(priceDollars);
+    return sum + qty * priceCents;
   }, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     if (hasPaymentsRecorded) return;
 
+    if (!dueDate) {
+      setErrorMsg('Please select a valid future due date');
+      return;
+    }
+
+    if (dueDate <= todayStr) {
+      setDueDate('');
+      setErrorMsg('Due date must be in the future (tomorrow or later)');
+      return;
+    }
+
+    const formattedItems: OrderItem[] = items.map((item) => ({
+      id: item.id,
+      itemName: item.itemName.trim(),
+      quantity: Math.max(1, parseInt(String(item.quantity)) || 1),
+      unitPrice: dollarsToCents(parseFloat(String(item.unitPrice)) || 0),
+    }));
+
     onUpdateOrder(order.id, {
-      customerName,
+      customerName: customerName.trim(),
       dueDate,
-      items,
+      items: formattedItems,
     });
 
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in overscroll-contain">
       <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
         
         {/* Header */}
@@ -101,6 +162,12 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
           </div>
         )}
 
+        {errorMsg && (
+          <div className="mb-6 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-medium flex items-center gap-2">
+            <span>⚠️</span> {errorMsg}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -111,20 +178,30 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                 disabled={hasPaymentsRecorded}
                 required
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:opacity-60"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
-              <input
-                type="date"
-                disabled={hasPaymentsRecorded}
-                required
+              <DatePickerField
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:opacity-60"
+                minDate={tomorrowStr}
+                disabled={hasPaymentsRecorded}
+                placeholder="Select due date..."
+                onChange={(newDate) => {
+                  if (newDate <= todayStr) {
+                    setDueDate('');
+                    setErrorMsg('Due date must be in the future (tomorrow or later)');
+                  } else {
+                    setDueDate(newDate);
+                    setErrorMsg(null);
+                  }
+                }}
               />
             </div>
           </div>
@@ -164,7 +241,8 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                       disabled={hasPaymentsRecorded}
                       required
                       value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-slate-900 disabled:opacity-60"
                     />
                   </div>
@@ -177,8 +255,9 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                       min="0.01"
                       disabled={hasPaymentsRecorded}
                       required
-                      value={centsToDollars(item.unitPrice) || ''}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', dollarsToCents(parseFloat(e.target.value) || 0))}
+                      value={item.unitPrice}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 disabled:opacity-60"
                     />
                   </div>

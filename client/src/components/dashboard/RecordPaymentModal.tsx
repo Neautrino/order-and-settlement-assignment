@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order } from '../../types/domain';
 import { centsToDollars, dollarsToCents, formatCurrency } from '../../utils/currency';
 
@@ -18,6 +18,18 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   const [amountInput, setAmountInput] = useState('');
   const [note, setNote] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Prevent background page from scrolling when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   if (!isOpen || !order) return null;
 
@@ -49,7 +61,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in overscroll-contain">
       <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-md p-6 sm:p-8 space-y-6">
         
         {/* Header */}
@@ -108,6 +120,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 required
                 placeholder="0.00"
                 value={amountInput}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setAmountInput(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
               />

@@ -9,6 +9,6 @@
 }
 
 .animate-unfold-down {
-  animation: unfoldTopDown 1s ease-in-out forwards;
+  animation: unfoldTopDown 0.7s ease-in forwards;
   overflow: hidden;
 }

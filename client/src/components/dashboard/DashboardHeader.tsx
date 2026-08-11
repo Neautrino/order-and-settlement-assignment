@@ -12,43 +12,52 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onNavigateHome,
 }) => {
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+    <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
       
-      {/* Left: Brand Logo & Back to Landing */}
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={onNavigateHome}>
-          <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center shadow-md transform transition hover:scale-105">
+      {/* Logo & Workspace Title */}
+      <div className="flex items-center gap-4">
+        <div 
+          className="flex items-center gap-2.5 cursor-pointer group" 
+          onClick={onNavigateHome}
+          title="Go to landing page"
+        >
+          <div className="w-10 h-10 bg-slate-900 group-hover:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md transition">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">DummyPay</span>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-slate-900 tracking-tight text-xl">DummyPay</span>
+            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">
+              App
+            </span>
+          </div>
         </div>
 
-        <span className="hidden sm:inline-block w-px h-5 bg-slate-200" />
-        
-        <span className="hidden sm:inline-block text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
-          Order & Settlement Management
-        </span>
+        <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+        <div className="hidden sm:block">
+          <h2 className="text-lg font-bold text-slate-800 tracking-tight leading-tight">Order & Settlement Engine</h2>
+        </div>
       </div>
 
-      {/* Right: User Avatar & Logout */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+      {/* Top Right User Profile Card */}
+      <div className="flex items-center gap-3 self-end sm:self-auto">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-xs">
+          <div className="w-7 h-7 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs shrink-0">
             {userEmail.charAt(0).toUpperCase()}
           </div>
-          <span className="hidden md:inline-block text-xs font-medium text-slate-700">
+          <span className="text-xs font-bold text-slate-900 truncate max-w-35 sm:max-w-45">
             {userEmail}
           </span>
+          <button
+            onClick={onLogout}
+            className="text-[11px] font-bold text-rose-600 hover:bg-rose-100/70 px-2 py-0.5 rounded-lg transition cursor-pointer shrink-0 ml-1"
+            title="Sign Out"
+          >
+            Exit
+          </button>
         </div>
-
-        <button
-          onClick={onLogout}
-          className="text-xs font-semibold text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 px-3.5 py-1.5 rounded-full border border-slate-200/60 transition cursor-pointer"
-        >
-          Sign Out
-        </button>
       </div>
 
     </header>

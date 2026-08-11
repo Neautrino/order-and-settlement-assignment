@@ -37,7 +37,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
     );
   }
 
-  const formattedDisplayId = displayId || (order.id.startsWith('order_') ? order.id : 'order_001');
+  const formattedDisplayId = displayId || order.id;
   const hasPayments = order.totalPaid > 0 || (order.payments && order.payments.length > 0);
   const paidPercent = order.totalAmount > 0 ? Math.min(100, Math.round((order.totalPaid / order.totalAmount) * 100)) : 0;
 
@@ -157,7 +157,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
                 {order.items && order.items.length > 0 ? (
                   order.items.map((item) => (
                     <tr key={item.id} className="hover:bg-white transition-colors duration-200">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900 max-w-[150px] sm:max-w-[200px] truncate" title={item.itemName}>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900 max-w-37.5 sm:max-w-50 truncate" title={item.itemName}>
                         {item.itemName}
                       </td>
                       <td className="py-2.5 px-3 text-center font-mono">{item.quantity}</td>
@@ -225,7 +225,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-slate-900">{formatCurrency(p.amount)}</p>
                           <p 
-                            className="text-[10px] text-slate-400 font-medium truncate max-w-[200px] sm:max-w-[300px]" 
+                            className="text-[10px] text-slate-400 font-medium truncate max-w-50 sm:max-w-75" 
                             title={`${formattedNote} • ${formattedDate}`}
                           >
                             {formattedNote} • {formattedDate}

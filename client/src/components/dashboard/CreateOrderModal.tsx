@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OrderItem } from '../../types/domain';
-import { formatCurrency, centsToDollars, dollarsToCents } from '../../utils/currency';
+import { formatCurrency, dollarsToCents } from '../../utils/currency';
+import { DatePickerField } from '../ui/DatePickerField';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
@@ -12,6 +13,12 @@ interface CreateOrderModalProps {
   }) => void;
 }
 
+interface FormItem {
+  itemName: string;
+  quantity: string | number;
+  unitPrice: string | number;
+}
+
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   isOpen,
   onClose,
@@ -19,14 +26,39 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 }) => {
   const [customerName, setCustomerName] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [items, setItems] = useState<OrderItem[]>([
-    { itemName: '', quantity: 1, unitPrice: 1000 }, // default $10.00
+  const [items, setItems] = useState<FormItem[]>([
+    { itemName: '', quantity: '1', unitPrice: '10.00' },
   ]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // System dates for minimum date constraint
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  // Reset form fields when modal opens & prevent background page scrolling
+  useEffect(() => {
+    if (isOpen) {
+      setCustomerName('');
+      setDueDate('');
+      setErrorMsg(null);
+      setItems([{ itemName: '', quantity: '1', unitPrice: '10.00' }]);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleAddItem = () => {
-    setItems([...items, { itemName: '', quantity: 1, unitPrice: 1000 }]);
+    setItems([...items, { itemName: '', quantity: '1', unitPrice: '10.00' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -34,34 +66,63 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof FormItem, value: any) => {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
   };
 
-  // Calculate live total amount in cents
+  // Calculate live total amount in cents dynamically
   const calculatedTotalCents = items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.unitPrice) || 0; // in cents
-    return sum + qty * price;
+    const qty = Math.max(0, parseInt(String(item.quantity)) || 0);
+    const priceDollars = parseFloat(String(item.unitPrice)) || 0;
+    const priceCents = dollarsToCents(priceDollars);
+    return sum + qty * priceCents;
   }, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !dueDate || items.length === 0) return;
+    setErrorMsg(null);
+
+    if (!customerName.trim()) {
+      setErrorMsg('Please enter a customer name');
+      return;
+    }
+
+    if (!dueDate) {
+      setErrorMsg('Please select a valid future due date');
+      return;
+    }
+
+    // Frontend due date validation: Must be strictly in the future (tomorrow or later)
+    if (dueDate <= todayStr) {
+      setDueDate('');
+      setErrorMsg('Due date must be in the future (tomorrow or later)');
+      return;
+    }
+
+    if (items.length === 0) {
+      setErrorMsg('Please add at least one item');
+      return;
+    }
+
+    const formattedItems: OrderItem[] = items.map((item) => ({
+      itemName: item.itemName.trim(),
+      quantity: Math.max(1, parseInt(String(item.quantity)) || 1),
+      unitPrice: dollarsToCents(parseFloat(String(item.unitPrice)) || 0),
+    }));
 
     onSubmitOrder({
-      customerName,
+      customerName: customerName.trim(),
       dueDate,
-      items,
+      items: formattedItems,
     });
 
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in overscroll-contain">
       <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
         
         {/* Header */}
@@ -78,6 +139,12 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
           </button>
         </div>
 
+        {errorMsg && (
+          <div className="mb-6 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-medium flex items-center gap-2">
+            <span>⚠️</span> {errorMsg}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* Customer & Due Date Row */}
@@ -89,19 +156,29 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                 required
                 placeholder="Acme Corporation"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
-              <input
-                type="date"
-                required
+              <DatePickerField
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
+                minDate={tomorrowStr}
+                placeholder="Select due date..."
+                onChange={(newDate) => {
+                  if (newDate <= todayStr) {
+                    setDueDate('');
+                    setErrorMsg('Due date must be in the future (tomorrow or later)');
+                  } else {
+                    setDueDate(newDate);
+                    setErrorMsg(null);
+                  }
+                }}
               />
             </div>
           </div>
@@ -140,7 +217,8 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       required
                       placeholder="Qty"
                       value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
@@ -153,8 +231,9 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       min="0.01"
                       required
                       placeholder="Unit Price"
-                      value={centsToDollars(item.unitPrice) || ''}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', dollarsToCents(parseFloat(e.target.value) || 0))}
+                      value={item.unitPrice}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
@@ -181,7 +260,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               <p className="text-lg font-black text-white">{formatCurrency(calculatedTotalCents)}</p>
             </div>
             <span className="text-xs bg-slate-800 text-emerald-400 px-3 py-1 rounded-full font-bold">
-              PAISE / CENTS Math Verified
+              Verified
             </span>
           </div>
 
