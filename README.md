@@ -140,6 +140,22 @@ bun run dev
 
 ---
 
+## 🧪 Testing & Verification
+
+The backend includes a focused test suite built with **Bun Test** that validates core business invariants, user isolation, state machine transitions, and database concurrency guarantees. Detailed test architecture and test case breakdowns are available in [docs/testing.md](./docs/testing.md):
+
+```bash
+cd server
+bun test
+```
+
+### Highlights:
+- **Unit Tests (`server/tests/unit/`)**: Validates pure business logic, UTC date boundaries, and order status precedence (`PAID` $\rightarrow$ `OVERDUE` $\rightarrow$ `PARTIALLY_PAID` $\rightarrow$ `PENDING`).
+- **Integration Tests (`server/tests/integration/`)**: Runs directly against PostgreSQL to verify JWT authentication, multi-tenant isolation, order immutability after payment, and overpayment prevention.
+- **🔥 Concurrency Guarantee Test (`payments.test.ts`)**: Executes simultaneous payment requests (`Promise.all`) against the same order. Confirms that PostgreSQL `FOR UPDATE` row-level locks prevent race-condition overpayments under heavy concurrent traffic.
+
+---
+
 ## 📚 Technical Documentation
 
 | Document | Purpose |
@@ -148,6 +164,7 @@ bun run dev
 | **[API Specification](./docs/api.md)** | Endpoint documentation, request schemas, error response formats |
 | **[Data Model Specification](./docs/data-model.md)** | Database schemas, relations, indexes, and minor-unit rules |
 | **[Edge Cases & Failure Scenarios](./docs/edge-cases.md)** | Edge case matrix, concurrency guarantees, and state machine transitions |
+| **[Test & Concurrency Specification](./docs/testing.md)** | Unit & integration test architecture, coverage inventory, and race condition tests |
 
 ---
 
