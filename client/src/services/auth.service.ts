@@ -13,31 +13,41 @@ export interface AuthResponse {
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
-  const data = await apiClient<AuthResponse>('/api/auth/login', {
+  const res = await apiClient<{ user: AuthUser; token: string }>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
 
-  if (data.token) {
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
+  const payload = res.data!;
+  if (payload.token) {
+    localStorage.setItem('auth_token', payload.token);
+    localStorage.setItem('auth_user', JSON.stringify(payload.user));
   }
 
-  return data;
+  return {
+    message: res.message || 'Login successful',
+    user: payload.user,
+    token: payload.token,
+  };
 }
 
 export async function registerUser(email: string, password: string): Promise<AuthResponse> {
-  const data = await apiClient<AuthResponse>('/api/auth/register', {
+  const res = await apiClient<{ user: AuthUser; token: string }>('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
 
-  if (data.token) {
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
+  const payload = res.data!;
+  if (payload.token) {
+    localStorage.setItem('auth_token', payload.token);
+    localStorage.setItem('auth_user', JSON.stringify(payload.user));
   }
 
-  return data;
+  return {
+    message: res.message || 'User registered successfully',
+    user: payload.user,
+    token: payload.token,
+  };
 }
 
 export function getStoredUser(): AuthUser | null {

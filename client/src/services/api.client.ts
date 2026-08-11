@@ -1,7 +1,9 @@
+import { ApiResponse } from '../types/domain';
+
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<T> {
+): Promise<ApiResponse<T>> {
   const token = localStorage.getItem('auth_token');
 
   const headers: Record<string, string> = {
@@ -15,17 +17,24 @@ export async function apiClient<T>(
     headers,
   });
 
-  const data = await response.json().catch(() => ({}));
+  const resJson: ApiResponse<T> = await response.json().catch(() => ({
+    success: false,
+    message: 'Invalid response from server',
+  }));
 
-  if (!response.ok) {
+  if (!response.ok || resJson.success === false) {
     if (response.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
-    const errorMessage = data.message || data.messasge || data.error || `HTTP ${response.status} Request Failed`;
+    const errorMessage =
+      resJson.message ||
+      (resJson as any).error ||
+      `HTTP ${response.status} Request Failed`;
     throw new Error(errorMessage);
   }
 
-  return data as T;
+  return resJson;
 }
+

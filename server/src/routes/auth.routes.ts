@@ -4,6 +4,7 @@ import { loginSchema, registerSchema } from "../validator/auth.validator";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { authenticate } from "../lib/middleware";
+import { sendError, sendSuccess } from "../utils/api-response";
 
 export async function authRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<ZodTypeProvider>();
@@ -23,7 +24,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const existingUser = await prisma.user.findUnique({where: {email}});
     if (existingUser) {
-      return reply.status(HTTP_STATUS.BAD_REQUEST).send({message: "User already exists with this email"})
+      return sendError(reply, HTTP_STATUS.BAD_REQUEST, "User already exists with this email", "USER_ALREADY_EXISTS")
     } 
 
     const hashedPassword = await Bun.password.hash(password);
@@ -37,7 +38,7 @@ export async function authRoutes(app: FastifyInstance) {
         id: user.id, email: user.email
     })
 
-    return reply.status(HTTP_STATUS.CREATED).send({message: "User registered successfully", token, user});
+    return sendSuccess(reply, HTTP_STATUS.CREATED, {user, token}, "User registered successfully");
   });
 
   fastify.post("/login", {
@@ -55,26 +56,22 @@ export async function authRoutes(app: FastifyInstance) {
 
       const user = await prisma.user.findUnique({ where: {email}});
       if (!user) {
-          return reply.status(HTTP_STATUS.UNAUTHORIZED).send({ error: "Invalid email or password"});
+          return sendError(reply, HTTP_STATUS.UNAUTHORIZED, "Invalid email or password", "INVALID_CREDENTIALS")
       }
 
       const isPasswordvalid = await Bun.password.verify(password, user.password)
       if(!isPasswordvalid) {
-          return reply.status(HTTP_STATUS.UNAUTHORIZED).send({ error: "Invalid email or password"});
+          return sendError(reply, HTTP_STATUS.UNAUTHORIZED, "Invalid email or password", "INVALID_CREDENTIALS")
       }
 
       const token = app.jwt.sign({ id: user.id, email: user.email });
 
-      return reply.status(HTTP_STATUS.OK).send({
-          message: "Login successful",
-          user: {id: user.id, email: user.email},
-          token
-      })
+      return sendSuccess(reply, HTTP_STATUS.OK, { user: { id: user.id, email: user.email }, token }, "Login successful");
   })
 
   fastify.get( "/me", {
     onRequest: [authenticate],
   }, async(request, reply) => {
-    return reply.status(HTTP_STATUS.OK).send({ user: request.user })
+    return sendSuccess(reply, HTTP_STATUS.OK, {user: request.user}, "User fetched successfully");
   })
 }

@@ -80,11 +80,14 @@ Every response includes headers detailing the current rate limit status:
 When request limits are exceeded, the API responds with HTTP Status `429`:
 ```json
 {
-  "statusCode": 429,
-  "error": "Too Many Requests",
+  "success": false,
   "message": "Rate limit exceeded. Try again in 15 minutes",
-  "date": "2026-08-11T08:42:00.000Z",
-  "expiresIn": 900
+  "error": {
+    "code": "TOO_MANY_REQUESTS",
+    "details": {
+      "expiresIn": 900
+    }
+  }
 }
 ```
 
@@ -92,11 +95,16 @@ When request limits are exceeded, the API responds with HTTP Status `429`:
 
 ## ⚠️ Error Handling
 
-The API returns standard HTTP status codes along with descriptive JSON error payloads:
+The API returns standard HTTP status codes along with descriptive, unified JSON error payloads:
 
 ```json
 {
-  "message": "Detailed description of the error"
+  "success": false,
+  "message": "Detailed description of the error",
+  "error": {
+    "code": "ERROR_CODE_NAME",
+    "details": null
+  }
 }
 ```
 
@@ -137,12 +145,15 @@ Creates a new user account and generates an initial JWT authentication token.
 **Response `201 Created`**:
 ```json
 {
+  "success": true,
   "message": "User registered successfully",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
-    "email": "user@example.com",
-    "createdAt": "2026-08-11T08:00:00.000Z"
+  "data": {
+    "user": {
+      "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+      "email": "user@example.com",
+      "createdAt": "2026-08-11T08:00:00.000Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -150,7 +161,11 @@ Creates a new user account and generates an initial JWT authentication token.
 **Response `400 Bad Request`**:
 ```json
 {
-  "message": "User already exists with this email"
+  "success": false,
+  "message": "User already exists with this email",
+  "error": {
+    "code": "USER_ALREADY_EXISTS"
+  }
 }
 ```
 
@@ -173,19 +188,26 @@ Authenticates existing user credentials and returns a JWT access token.
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "Login successful",
-  "user": {
-    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
-    "email": "user@example.com"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "data": {
+    "user": {
+      "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+      "email": "user@example.com"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
 }
 ```
 
 **Response `401 Unauthorized`**:
 ```json
 {
-  "error": "Invalid email or password"
+  "success": false,
+  "message": "Invalid email or password",
+  "error": {
+    "code": "INVALID_CREDENTIALS"
+  }
 }
 ```
 
@@ -199,9 +221,13 @@ Retrieves the profile of the currently authenticated user.
 **Response `200 OK`**:
 ```json
 {
-  "user": {
-    "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
-    "email": "user@example.com"
+  "success": true,
+  "message": "User fetched successfully",
+  "data": {
+    "user": {
+      "id": "b3c9f28a-7a54-4a2e-9d21-4f27110e53a2",
+      "email": "user@example.com"
+    }
   }
 }
 ```
@@ -247,8 +273,9 @@ Creates a new order with line items. Total amount is calculated automatically on
 **Response `201 Created`**:
 ```json
 {
+  "success": true,
   "message": "Order created successfully",
-  "order": {
+  "data": {
     "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
     "customerName": "Acme Corporation",
     "status": "PENDING",
@@ -281,6 +308,8 @@ Authorization: Bearer <token>
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
+  "message": "Orders fetched successfully",
   "data": [
     {
       "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
@@ -312,7 +341,7 @@ Authorization: Bearer <token>
       "createdAt": "2026-08-11T08:15:00.000Z"
     }
   ],
-  "pagination": {
+  "meta": {
     "page": 1,
     "limit": 10,
     "totalOrders": 1,
@@ -334,8 +363,9 @@ Retrieves detailed information for a specific order.
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "Order fetched successfully",
-  "order": {
+  "data": {
     "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
     "customerName": "Acme Corporation",
     "status": "PARTIALLY_PAID",
@@ -354,7 +384,11 @@ Retrieves detailed information for a specific order.
 **Response `404 Not Found`**:
 ```json
 {
-  "message": "Order not found"
+  "success": false,
+  "message": "Order not found",
+  "error": {
+    "code": "ORDER_NOT_FOUND"
+  }
 }
 ```
 
@@ -380,8 +414,9 @@ Updates an existing order's customer name, due date, or line items.
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "Order updated successfully",
-  "order": {
+  "data": {
     "id": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
     "customerName": "Acme Holdings Ltd",
     "status": "PENDING",
@@ -396,7 +431,11 @@ Updates an existing order's customer name, due date, or line items.
 **Response `400 Bad Request`**:
 ```json
 {
-  "message": "Cannot update an order that has payments record"
+  "success": false,
+  "message": "Cannot update an order that has payments recorded against it",
+  "error": {
+    "code": "ORDER_HAS_PAYMENTS"
+  }
 }
 ```
 
@@ -413,6 +452,7 @@ Deletes an existing order and its associated line items.
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "Order deleted successfully"
 }
 ```
@@ -420,14 +460,22 @@ Deletes an existing order and its associated line items.
 **Response `400 Bad Request`**:
 ```json
 {
-  "message": "Cannot delete an order that has payments recorded against it"
+  "success": false,
+  "message": "Cannot delete an order that has payments recorded against it",
+  "error": {
+    "code": "ORDER_HAS_PAYMENTS"
+  }
 }
 ```
 
 **Response `404 Not Found`**:
 ```json
 {
-  "message": "Order not found"
+  "success": false,
+  "message": "Order not found",
+  "error": {
+    "code": "ORDER_NOT_FOUND"
+  }
 }
 ```
 
@@ -445,18 +493,26 @@ Calculates real-time financial balance metrics and status for an order prior to 
 **Response `200 OK`**:
 ```json
 {
-  "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
-  "status": "PARTIALLY_PAID",
-  "totalAmount": 2000000,
-  "totalPaid": 500000,
-  "remainingAmount": 1500000
+  "success": true,
+  "message": "Order balance calculated successfully",
+  "data": {
+    "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+    "status": "PARTIALLY_PAID",
+    "totalAmount": 2000000,
+    "totalPaid": 500000,
+    "remainingAmount": 1500000
+  }
 }
 ```
 
 **Response `404 Not Found`**:
 ```json
 {
-  "message": "Order not found"
+  "success": false,
+  "message": "Order not found",
+  "error": {
+    "code": "ORDER_NOT_FOUND"
+  }
 }
 ```
 
@@ -487,14 +543,17 @@ Records a payment (partial or full) against an open order.
 **Response `201 Created`**:
 ```json
 {
+  "success": true,
   "message": "Payment recorded successfully",
-  "orderStatus": "PAID",
-  "payment": {
-    "id": "f83b1022-7711-4b2a-a92d-9876543210fe",
-    "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
-    "amount": 1500000,
-    "note": "Final settlement via wire transfer",
-    "paymentDate": "2026-08-11T09:15:00.000Z"
+  "data": {
+    "orderStatus": "PAID",
+    "payment": {
+      "id": "f83b1022-7711-4b2a-a92d-9876543210fe",
+      "orderId": "a10f63b2-65f1-4770-87a3-e4d9b9c02011",
+      "amount": 1500000,
+      "note": "Final settlement via wire transfer",
+      "paymentDate": "2026-08-11T09:15:00.000Z"
+    }
   }
 }
 ```
@@ -502,14 +561,22 @@ Records a payment (partial or full) against an open order.
 **Response `400 Bad Request` (Order fully paid)**:
 ```json
 {
-  "message": "Order is already fully paid"
+  "success": false,
+  "message": "Order is already fully paid",
+  "error": {
+    "code": "ORDER_ALREADY_PAID"
+  }
 }
 ```
 
 **Response `400 Bad Request` (Overpayment attempt)**:
 ```json
 {
-  "message": "Payment amount (2000000) exceeds remaining balance (1500000)"
+  "success": false,
+  "message": "Payment amount (2000000) exceeds remaining balance (1500000)",
+  "error": {
+    "code": "PAYMENT_EXCEEDS_BALANCE"
+  }
 }
 ```
 

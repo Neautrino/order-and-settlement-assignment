@@ -5,6 +5,7 @@ import { orderParamsSchema, orderQuerySchema, orderSchema, updateOrderSchema } f
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { resolveOrderStatus } from "../utils/status-calc";
+import { sendSuccess, sendError } from "../utils/api-response";
 
 //conver BigInt to number for json response
 (BigInt.prototype as any).toJSON = function() {
@@ -54,10 +55,7 @@ export async function orderRoutes(app: FastifyInstance) {
             }
         })
 
-        return reply.status(HTTP_STATUS.CREATED).send({
-            message: "Order created successfully",
-            order,
-        })
+        return sendSuccess(reply, HTTP_STATUS.CREATED, order, "Order created successfully");
     })
 
     
@@ -150,16 +148,19 @@ export async function orderRoutes(app: FastifyInstance) {
         const totalPages = Math.ceil(totalOrders / limit)
         const hasMore = page < totalPages
         
-        return reply.status(HTTP_STATUS.OK).send({
-            data: formattedOrders,
-            pagination: {
+        return sendSuccess(
+            reply,
+            HTTP_STATUS.OK,
+            formattedOrders,
+            "Orders fetched successfully",
+            {
                 page,
                 limit,
                 totalOrders,
                 totalPages,
                 hasMore
             }
-        })
+        )
     })
 
     fastify.get("/:id", {
@@ -192,7 +193,7 @@ export async function orderRoutes(app: FastifyInstance) {
         })
 
         if (!order) {
-            return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found"})
+            return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
         }
 
         const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0n);
@@ -210,22 +211,19 @@ export async function orderRoutes(app: FastifyInstance) {
             }).catch(err => request.log.error(err, "Failed background status sync"))
         }
 
-        return reply.status(HTTP_STATUS.OK).send({
-            message: "Order fetched successfully",
-            order: {
-                id: order.id,
-                customerName: order.customerName,
-                status: realTimeStatus,
-                totalAmount: order.totalAmount,
-                totalPaid,
-                remainingAmount: order.totalAmount - totalPaid,
-                dueDate: order.dueDate,
-                items: order.items,
-                payments: order.payments,
-                createdAt: order.createdAt,
-                updatedAt: order.updatedAt,
-            },
-        })
+        return sendSuccess(reply, HTTP_STATUS.OK, {
+            id: order.id,
+            customerName: order.customerName,
+            status: realTimeStatus,
+            totalAmount: order.totalAmount,
+            totalPaid,
+            remainingAmount: order.totalAmount - totalPaid,
+            dueDate: order.dueDate,
+            items: order.items,
+            payments: order.payments,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        }, "Order fetched successfully")
     })
 
     fastify.patch("/:id", {
@@ -319,18 +317,13 @@ export async function orderRoutes(app: FastifyInstance) {
                 })
             })
 
-            return reply.status(HTTP_STATUS.OK).send({
-                message: "Order updated successfully",
-                order: updatedOrder
-            })
+            return sendSuccess(reply, HTTP_STATUS.OK, updatedOrder, "Order updated successfully");
         } catch (err: any) {
             if (err.message === "NOT_FOUND") {
-                return reply.status(HTTP_STATUS.NOT_FOUND).send({message: "Order not found"})
+                return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
             }
             if (err.message === "HAS_PAYMENTS") {
-                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                    messasge: "Cannot update an order that has payments record"
-                })
+                return sendError(reply, HTTP_STATUS.BAD_REQUEST, "Cannot update an order that has payments recorded against it", "ORDER_HAS_PAYMENTS");
             }
 
             throw err;
@@ -371,19 +364,15 @@ export async function orderRoutes(app: FastifyInstance) {
                 await tx.order.delete({
                     where: {id}
                 })
-
-                return reply.status(HTTP_STATUS.OK).send({
-                    message: "Order deleted successfully"
-                })
             })
+
+            return sendSuccess(reply, HTTP_STATUS.OK, null, "Order deleted successfully");
         } catch (err: any) {
             if(err.message === "NOT_FOUND") {
-                return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found" });
+                return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
             }
             if (err.message === "HAS_PAYMENTS") {
-                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                    message: "Cannot delete an order that has payments recorded against it"
-                })
+                return sendError(reply, HTTP_STATUS.BAD_REQUEST, "Cannot delete an order that has payments recorded against it", "ORDER_HAS_PAYMENTS");
             }
 
             throw err;

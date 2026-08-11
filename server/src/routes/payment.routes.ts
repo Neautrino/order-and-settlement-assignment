@@ -5,6 +5,7 @@ import { authenticate } from "../lib/middleware";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { getCalculatedOrderBalance } from "../utils/payment-calc";
+import { sendSuccess, sendError } from "../utils/api-response";
 
 //conver BigInt to number for json response
 (BigInt.prototype as any).toJSON = function() {
@@ -29,18 +30,16 @@ export async function paymentRoutes(app: FastifyInstance) {
         const result = await getCalculatedOrderBalance(orderId, request.user.id, request.log)
 
         if(!result) {
-            return reply.status(HTTP_STATUS.NOT_FOUND).send({
-                message: "Order not found"
-            })
+            return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
         }
 
-        return reply.status(HTTP_STATUS.OK).send({
+        return sendSuccess(reply, HTTP_STATUS.OK, {
             orderId: result.order.id,
             status: result.status,
             totalAmount: result.order.totalAmount,
             totalPaid: result.totalPaid,
             remainingAmount: result.remainingAmount,
-        })
+        }, "Order balance calculated successfully");
     })
 
     fastify.post("/", {
@@ -59,21 +58,15 @@ export async function paymentRoutes(app: FastifyInstance) {
         const balance = await getCalculatedOrderBalance(orderId, request.user.id, request.log)
 
         if(!balance){
-            return reply.status(HTTP_STATUS.NOT_FOUND).send({
-                message: "Order not found"
-            })
+            return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
         }
 
         if(balance.status === "PAID") {
-            return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                message: "Order is already fully paid"
-            })
+            return sendError(reply, HTTP_STATUS.BAD_REQUEST, "Order is already fully paid", "ORDER_ALREADY_PAID");
         }
 
         if(paymentAmount > balance.remainingAmount){
-            return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                message: `Payment amount ${paymentAmount} exceeds remaining due amount ${balance.remainingAmount}`
-            })
+            return sendError(reply, HTTP_STATUS.BAD_REQUEST, `Payment amount ${paymentAmount} exceeds remaining due amount ${balance.remainingAmount}`, "PAYMENT_EXCEEDS_BALANCE");
         }
 
         try {
@@ -138,23 +131,20 @@ export async function paymentRoutes(app: FastifyInstance) {
                 return {payment, newStatus};
             })
 
-            return reply.status(HTTP_STATUS.CREATED).send({
-                message: "Payment recorded successfully",
+            return sendSuccess(reply, HTTP_STATUS.CREATED, {
                 orderStatus: result.newStatus,
                 payment: result.payment,
-            })
+            }, "Payment recorded successfully");
         } catch (err: any) {
             if (err.message === "NOT_FOUND") {
-                return reply.status(HTTP_STATUS.NOT_FOUND).send({ message: "Order not found" });
+                return sendError(reply, HTTP_STATUS.NOT_FOUND, "Order not found", "ORDER_NOT_FOUND");
             }
             if (err.message === "ALREADY_PAID") {
-                return reply.status(HTTP_STATUS.BAD_REQUEST).send({ message: "Order is already fully paid" });
+                return sendError(reply, HTTP_STATUS.BAD_REQUEST, "Order is already fully paid", "ORDER_ALREADY_PAID");
             }
             if (err.message?.startsWith("EXCEEDS_BALANCE")) {
                 const remaining = err.message.split(":")[1];
-                return reply.status(HTTP_STATUS.BAD_REQUEST).send({
-                    message: `Payment amount (${paymentAmount}) exceeds remaining balance (${remaining})`
-                });
+                return sendError(reply, HTTP_STATUS.BAD_REQUEST, `Payment amount (${paymentAmount}) exceeds remaining balance (${remaining})`, "PAYMENT_EXCEEDS_BALANCE");
             }
             throw err;
         }

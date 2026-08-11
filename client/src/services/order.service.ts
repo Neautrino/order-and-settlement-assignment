@@ -1,4 +1,4 @@
-import { Order, PaginatedOrdersResponse } from '../types/domain';
+import { Order, PaginatedOrdersResponse, PaginationMeta } from '../types/domain';
 import { apiClient } from './api.client';
 
 export async function fetchOrders(
@@ -13,12 +13,16 @@ export async function fetchOrders(
   if (status && status !== 'ALL') {
     params.append('status', status);
   }
-  return apiClient<PaginatedOrdersResponse>(`/api/orders?${params.toString()}`);
+  const res = await apiClient<Order[]>(`/api/orders?${params.toString()}`);
+  return {
+    data: res.data || [],
+    pagination: res.meta as PaginationMeta,
+  };
 }
 
 export async function fetchOrderById(id: string): Promise<Order> {
-  const res = await apiClient<{ message: string; order: Order }>(`/api/orders/${id}`);
-  return res.order;
+  const res = await apiClient<Order>(`/api/orders/${id}`);
+  return res.data!;
 }
 
 export async function createOrder(payload: {
@@ -26,11 +30,11 @@ export async function createOrder(payload: {
   dueDate: string;
   items: Array<{ itemName: string; quantity: number; unitPrice: number }>;
 }): Promise<Order> {
-  const res = await apiClient<{ message: string; order: Order }>('/api/orders', {
+  const res = await apiClient<Order>('/api/orders', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  return res.order;
+  return res.data!;
 }
 
 export async function updateOrder(
@@ -41,15 +45,15 @@ export async function updateOrder(
     items?: Array<{ itemName: string; quantity: number; unitPrice: number }>;
   }
 ): Promise<Order> {
-  const res = await apiClient<{ message: string; order: Order }>(`/api/orders/${id}`, {
+  const res = await apiClient<Order>(`/api/orders/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
-  return res.order;
+  return res.data!;
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  await apiClient<{ message: string }>(`/api/orders/${id}`, {
+  await apiClient<null>(`/api/orders/${id}`, {
     method: 'DELETE',
   });
 }
@@ -59,10 +63,11 @@ export async function recordPayment(payload: {
   amount: number;
   note?: string;
 }): Promise<{ payment: any; orderStatus: string }> {
-  return apiClient<{ message: string; orderStatus: string; payment: any }>('/api/payments', {
+  const res = await apiClient<{ payment: any; orderStatus: string }>('/api/payments', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  return res.data!;
 }
 
 export async function calculateOrderBalance(orderId: string): Promise<{
@@ -72,12 +77,13 @@ export async function calculateOrderBalance(orderId: string): Promise<{
   totalPaid: number;
   remainingAmount: number;
 }> {
-  return apiClient<{
+  const res = await apiClient<{
     orderId: string;
     status: string;
     totalAmount: number;
     totalPaid: number;
     remainingAmount: number;
   }>(`/api/payments/calculate/${orderId}`);
+  return res.data!;
 }
 

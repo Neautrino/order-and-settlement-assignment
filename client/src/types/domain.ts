@@ -1,5 +1,16 @@
 export type OrderStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: {
+    code: string;
+    details?: any;
+  };
+  meta?: Record<string, any>;
+}
+
 export interface OrderItem {
   id?: string;
   itemName: string;
@@ -48,4 +59,5 @@ export interface PaginatedOrdersResponse {
   data: Order[];
   pagination: PaginationMeta;
 }
+
 

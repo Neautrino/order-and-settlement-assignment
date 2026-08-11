@@ -6,6 +6,7 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth.routes";
 import { orderRoutes } from "./routes/order.routes";
 import { paymentRoutes } from "./routes/payment.routes";
+import { sendSuccess } from "./utils/api-response";
 
 const PORT = 3000
 
@@ -34,19 +35,17 @@ await fastify.register(fastifyRateLimit, {
     return `ip:${request.ip}`
   },
   errorResponseBuilder: (request, context) => ({
-    statusCode: 429,
-    error: "Too Many Requests",
+    success: false,
     message: `Rate limit exceeded. Try again in ${context.after}`,
-    date: new Date().toISOString(),
-    expiresIn: context.after
+    error: {
+      code: "TOO_MANY_REQUESTS",
+      details: { expiresIn: context.after}
+    }
   })
 })
 
 fastify.get('/', async (request, reply) => {
-  return {
-    success: true,
-    message: 'Order and settlements server is running'
-  }
+  return sendSuccess(reply, 200, null, 'Order and settlements server is running')
 })
 
 fastify.register(authRoutes, {
