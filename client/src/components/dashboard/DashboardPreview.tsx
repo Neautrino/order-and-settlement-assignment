@@ -6,10 +6,9 @@ import { MetricCardData } from '../../types/domain';
 
 interface DashboardPreviewProps {
   onActionClick?: (action: string) => void;
-  onNavigateDashboard?: () => void;
 }
 
-export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClick, onNavigateDashboard }) => {
+export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClick }) => {
   const [dateRange, setDateRange] = useState('May 1 - May 31, 2024');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

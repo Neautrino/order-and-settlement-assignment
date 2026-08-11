@@ -2,11 +2,10 @@ import React from 'react';
 import { MetricCardData } from '../../types/domain';
 
 interface StatCardProps extends MetricCardData {
-  onClick?: () => void;
   index?: number;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPositive, type, onClick, index = 0 }) => {
+export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPositive, type, index = 0 }) => {
   // 10 data points per sparkline matching screenshot
   const sparklineData = {
     balance: [
@@ -43,7 +42,6 @@ export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPos
 
   return (
     <div 
-      onClick={onClick}
       className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between h-36 cursor-pointer active:scale-98 animate-fade-in-up"
       style={{ animationDelay: `${index * 0.08}s` }}
     >

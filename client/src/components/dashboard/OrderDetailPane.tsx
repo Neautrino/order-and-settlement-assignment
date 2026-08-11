@@ -159,7 +159,7 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
             key={`items-${order.id}`}
             className="bg-slate-50/50 rounded-2xl border border-slate-100 shadow-xs overflow-x-auto animate-unfold-down"
           >
-            <table className="w-full text-left text-xs min-w-[280px]">
+            <table className="w-full text-left text-xs min-w-70">
               <thead className="bg-slate-100/70 text-slate-500 font-semibold border-b border-slate-100">
                 <tr>
                   <th className="py-2.5 px-3">Item Description</th>
