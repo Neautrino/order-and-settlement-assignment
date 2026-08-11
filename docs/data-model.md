@@ -174,8 +174,8 @@ classDiagram
 
 - **Database System**: PostgreSQL managed via **Prisma ORM v6**
 - **Primary Keys**: Globally unique UUID v4 strings (`@default(uuid())`) across all tables.
-- **Monetary Precision**: Stored using 64-bit BigInt (`BIGINT` / `BigInt`) representing the smallest currency units (**paise** for INR / **cents** for USD).
-  - *Example*: ₹150.50 is stored as integer `15050`.
+- **Monetary Precision**: Stored using 64-bit BigInt (`BIGINT` / `BigInt`) representing minor currency units (**cents** for USD).
+  - *Example*: $150.50 is stored as integer `15050` cents.
   - *Rationale*: Guarantees zero floating-point rounding errors during aggregate financial calculations (`SUM(amount)`).
 - **Referential Integrity**: Standard SQL foreign key constraints with `ON DELETE CASCADE`.
 
@@ -253,7 +253,7 @@ Represents customer invoices/orders.
 | `userId` | `String` | `@relation(User.id)`, `@index` | - | Foreign Key to `User.id` |
 | `customerName` | `String` | Non-empty string | - | Client or buyer name |
 | `status` | `OrderStatus` | Enum | `PENDING` | `PENDING \| PARTIALLY_PAID \| PAID \| OVERDUE` |
-| `totalAmount` | `BigInt` | Minimum 1 | - | Total calculated amount in paise |
+| `totalAmount` | `BigInt` | Minimum 1 | - | Total calculated amount in cents |
 | `dueDate` | `DateTime` | `dueDate > Today` | - | Target payment deadline date |
 | `createdAt` | `DateTime` | Timestamp | `now()` | Order creation timestamp |
 | `updatedAt` | `DateTime` | `@updatedAt` | - | Order modification timestamp |
@@ -269,7 +269,7 @@ Individual line items attached to an order.
 | `orderId` | `String` | `@relation(Order.id)`, `@index` | - | Foreign Key to `Order.id` |
 | `itemName` | `String` | Non-empty string | - | Description of product or service |
 | `quantity` | `Int` | Integer `>= 1` | - | Quantity ordered |
-| `unitPrice` | `BigInt` | Integer `> 0` | - | Unit price per item in paise |
+| `unitPrice` | `BigInt` | Integer `> 0` | - | Unit price per item in cents |
 | `createdAt` | `DateTime` | Timestamp | `now()` | Creation timestamp |
 | `updatedAt` | `DateTime` | `@updatedAt` | - | Item update timestamp |
 
@@ -282,9 +282,9 @@ Ledger entries for partial and full payment transactions.
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `String` | `@id`, UUID v4 | `uuid()` | Primary Key |
 | `orderId` | `String` | `@relation(Order.id)`, `@index` | - | Foreign Key to `Order.id` |
-| `amount` | `BigInt` | Integer `> 0` | - | Payment amount in paise |
+| `amount` | `BigInt` | Integer `> 0` | - | Payment amount in cents |
 | `note` | `String` | Optional string | - | Payment memo/notes |
-| `paymentDate` | `DateTime` | Timestamp | `now()` | Transaction completion timestamp |
+| `paymentDate` | `DateTime` | Timestamp | `now()` | Server-side generated execution timestamp |
 | `createdAt` | `DateTime` | Timestamp | `now()` | Ledger entry timestamp |
 
 ---

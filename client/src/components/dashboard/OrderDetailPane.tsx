@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Order } from '../../types/domain';
 import { formatCurrency } from '../../utils/currency';
+import { formatDate } from '../../utils/date';
 
 interface OrderDetailPaneProps {
   order: Order | null;
@@ -84,17 +85,22 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
           <p className="text-[11px] font-mono text-slate-400 mt-0.5 select-all break-all truncate transition-all duration-700" title={order.id}>
             <span className="font-semibold text-slate-400/80">ID:</span> {order.id}
           </p>
-          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1.5 flex-wrap transition-all duration-700">
-            <span>Created on {order.createdAt?.split('T')[0]}</span>
-            <span>•</span>
-            <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] ${
-              order.status === 'OVERDUE'
-                ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                : 'bg-amber-50 text-amber-800 border border-amber-200/80'
-            }`}>
-              <span>📅</span>
-              <span>Due {order.dueDate?.split('T')[0]}</span>
-            </span>
+          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium mt-2 flex-wrap transition-all duration-700">
+            <div className="flex items-center gap-1 text-slate-500">
+              <span className="text-[11px] text-slate-400">Created:</span>
+              <span className="font-semibold text-slate-700">{formatDate(order.createdAt)}</span>
+            </div>
+            <span className="text-slate-300">•</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-400">Due:</span>
+              <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${
+                order.status === 'OVERDUE'
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200/80 font-mono'
+                  : 'bg-slate-100 text-slate-800 border border-slate-200/60 font-mono'
+              }`}>
+                {formatDate(order.dueDate)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order } from '../../types/domain';
 import { centsToDollars, dollarsToCents, formatCurrency } from '../../utils/currency';
+import { formatDate } from '../../utils/date';
 import { calculateOrderBalance } from '../../services/order.service';
 import { SwipeButton } from '../ui/SwipeButton';
 
@@ -118,18 +119,24 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
         </div>
 
         {/* Order Balance Summary — matches the dark banner from Create/Edit modals */}
-        <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between text-xs pb-2.5 border-b border-slate-800">
-            <span className="text-slate-400 font-medium">Payment Deadline</span>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-              order.status === 'OVERDUE'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
-                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-            }`}>
-              <span>📅</span>
-              <span>Due: {order.dueDate?.split('T')[0]}</span>
-              {order.status === 'OVERDUE' && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Overdue</span>}
-            </span>
+        <div className="bg-slate-900 text-white p-4.5 rounded-2xl space-y-3.5 shadow-sm">
+          <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800/80">
+            <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+              <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Due Date</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-200 text-xs tracking-tight">
+                {formatDate(order.dueDate)}
+              </span>
+              {order.status === 'OVERDUE' && (
+                <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  Overdue
+                </span>
+              )}
+            </div>
           </div>
 
           {isCalculating ? (

@@ -33,7 +33,7 @@ Welcome to the **Order & Settlements API** documentation. This document provides
 
 - **Base URL**: `http://localhost:3000`
 - **Data Format**: `application/json`
-- **Monetary Values**: Stored and returned as **Integers** representing the lowest currency denomination (e.g. **paise / cents**; `1000` = ₹10.00 / $10.00) to prevent floating-point inaccuracies.
+- **Monetary Values**: Stored and returned as **Integers** representing minor currency units (**cents** in USD; `1000` = $10.00) to prevent floating-point inaccuracies.
 - **Timestamps**: Standard ISO 8601 formatted strings in UTC (e.g., `2026-08-15T00:00:00.000Z`).
 - **Data Schema Reference**: See [docs/data-model.md](file:///home/neautrino/Code/projects/order-and-settlements/docs/data-model.md) for full ER diagrams and table structures.
 
@@ -48,7 +48,7 @@ The API uses **JWT (JSON Web Tokens)** for authentication.
   Authorization: Bearer <your_jwt_token>
   ```
 - **Token Expiry**: `24 hours`
-- User ownership is strictly enforced across all order and payment resources.
+- **User-Level Data Isolation**: User ownership is strictly enforced across all order and payment resources. Users cannot view, edit, or delete data belonging to other accounts.
 
 ---
 
@@ -518,18 +518,20 @@ Records a payment (partial or full) against an open order.
 ## 🔒 Business Rules & Validation Constraints
 
 1. **Due Date Validation**:
-   - Order creation and updates strictly require `dueDate` to be a future date (`dueDate > today`). Creation with today or past dates will fail validation (`400 Bad Request`).
+   - Order creation and updates strictly require `dueDate` to be a future calendar date (`YYYY-MM-DD`).
+   - Time of day is ignored to prevent timezone boundary bugs.
 
-2. **Real-time Status Resolution**:
-   - Status is calculated dynamically:
-     - `PAID`: `totalPaid == totalAmount`
-     - `OVERDUE`: `totalPaid < totalAmount` AND `dueDate < today`
-     - `PARTIALLY_PAID`: `0 < totalPaid < totalAmount` AND `dueDate >= today`
-     - `PENDING`: `totalPaid == 0` AND `dueDate >= today`
-   - Lazy background sync persists status transitions to `OVERDUE` in the database asynchronously when queried.
+2. **Status Persistence & Reconciliation**:
+   - Stored status is maintained as a persisted database state, while the API reconciles time-dependent status such as `OVERDUE` when evaluating an order:
+     - `PAID`: `totalPaid >= totalAmount`
+     - `OVERDUE`: `totalPaid < totalAmount` AND `currentDate > dueDate`
+     - `PARTIALLY_PAID`: `0 < totalPaid < totalAmount` AND `currentDate <= dueDate`
+     - `PENDING`: `totalPaid == 0` AND `currentDate <= dueDate`
 
-3. **Immutability Protection**:
-   - Orders with recorded payments (`payments.length > 0`) cannot be edited (`PATCH`) or removed (`DELETE`). This enforces audit trail compliance for settlements.
+3. **Immutability Protection & Deletion Rules**:
+   - Orders with recorded payments (`totalPaid > 0`) cannot be edited (`PATCH`) or deleted (`DELETE`).
+   - Only unpaid orders (`totalPaid == 0`) can be modified or deleted along with their attached line items.
 
-4. **Race-Condition & Overpayment Safety**:
-   - Payment creation executes within a database transaction utilizing **pessimistic row locking** (`SELECT FOR UPDATE`). Concurrent payment submissions for the same order are serialized safely to prevent double-spending or balance corruption.
+4. **Payment Timestamps & Overpayment Prevention**:
+   - `paymentDate` is generated server-side at execution time; client overrides are ignored.
+   - Payment creation executes within a database transaction utilizing **pessimistic row locking** (`SELECT ... FOR UPDATE`) to serialize concurrent payments and prevent overpayment race conditions.
