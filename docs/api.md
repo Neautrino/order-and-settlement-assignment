@@ -298,10 +298,11 @@ Fetches a paginated list of orders belonging to the authenticated user. Computes
 | :--- | :--- | :--- | :--- | :--- |
 | `page` | integer | `1` | `min: 1` | Page number for pagination |
 | `limit` | integer | `10` | `min: 1, max: 100` | Number of items per page |
+| `status` | string | - | `PENDING`, `PARTIALLY_PAID`, `PAID`, `OVERDUE` | Filter orders by status |
 
 **Example Request**:
 ```http
-GET /api/orders?page=1&limit=10 HTTP/1.1
+GET /api/orders?page=1&limit=10&status=PENDING HTTP/1.1
 Authorization: Bearer <token>
 ```
 

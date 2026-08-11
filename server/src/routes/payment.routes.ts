@@ -5,6 +5,7 @@ import { authenticate } from "../lib/middleware";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { getCalculatedOrderBalance } from "../utils/payment-calc";
+import { resolveOrderStatus } from "../utils/status-calc";
 import { sendSuccess, sendError } from "../utils/api-response";
 
 //conver BigInt to number for json response
@@ -106,7 +107,12 @@ export async function paymentRoutes(app: FastifyInstance) {
                 }
 
                 const newTotalPaid = currentPaid + paymentAmount;
-                const newStatus = newTotalPaid === order.totalAmount ? "PAID" : "PARTIALLY_PAID";
+                const newStatus = resolveOrderStatus({
+                    status: order.status,
+                    totalAmount: order.totalAmount,
+                    totalPaid: newTotalPaid,
+                    dueDate: order.dueDate
+                });
 
                 const payment = await tx.payment.create({
                     data: {

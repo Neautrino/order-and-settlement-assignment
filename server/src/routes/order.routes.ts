@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { resolveOrderStatus } from "../utils/status-calc";
 import { sendSuccess, sendError } from "../utils/api-response";
+import { toUTCMidnight, getUTCTodayMidnight } from "../utils/date-utils";
 
 //conver BigInt to number for json response
 (BigInt.prototype as any).toJSON = function() {
@@ -33,7 +34,7 @@ export async function orderRoutes(app: FastifyInstance) {
             data: {
                 userId: request.user.id,
                 customerName,
-                dueDate: new Date(dueDate),
+                dueDate: toUTCMidnight(dueDate),
                 totalAmount,
                 items: {
                     createMany: {
@@ -75,11 +76,22 @@ export async function orderRoutes(app: FastifyInstance) {
         
         const whereClause: { userId: string; status?: "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE"} = {
             userId: request.user.id
-        }
+        };
 
         if(status) {
             whereClause.status = status;
         }
+
+        // Reconcile overdue status in database BEFORE status filtering and pagination
+        const todayMidnight = getUTCTodayMidnight();
+        await prisma.order.updateMany({
+            where: {
+                userId: request.user.id,
+                status: { in: ["PENDING", "PARTIALLY_PAID"] },
+                dueDate: { lt: todayMidnight }
+            },
+            data: { status: "OVERDUE" }
+        });
 
         const [totalOrders, orders] = await Promise.all([
             prisma.order.count({
@@ -104,10 +116,7 @@ export async function orderRoutes(app: FastifyInstance) {
                 },
                 orderBy: { createdAt: "asc" },
             })
-        ])
-        
-
-        const statusChangedIds: string[] = [];
+        ]);
 
         const formattedOrders = orders.map((order) => {
             const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0n);
@@ -116,11 +125,7 @@ export async function orderRoutes(app: FastifyInstance) {
                 totalAmount: order.totalAmount,
                 totalPaid,
                 dueDate: order.dueDate
-            })
-
-            if(realTimeStatus !== order.status && realTimeStatus === "OVERDUE") {
-                statusChangedIds.push(order.id);
-            }
+            });
 
             return {
                 id: order.id,
@@ -134,16 +139,7 @@ export async function orderRoutes(app: FastifyInstance) {
                 payments: order.payments,
                 createdAt: order.createdAt,
             };
-        })
-
-        if(statusChangedIds.length > 0) {
-            prisma.order.updateMany({
-                where: {id: {
-                    in: statusChangedIds
-                }},
-                data: { status: "OVERDUE" }
-            }).catch(err => request.log.error(err, "Failed background status sync"))
-        }
+        });
 
         const totalPages = Math.ceil(totalOrders / limit)
         const hasMore = page < totalPages
@@ -275,7 +271,7 @@ export async function orderRoutes(app: FastifyInstance) {
                         where: {id},
                         data: {
                             ...(customerName && {customerName}),
-                            ...(dueDate && {dueDate: new Date(dueDate)}),
+                            ...(dueDate && {dueDate: toUTCMidnight(dueDate)}),
                             totalAmount,
                             items: {
                                 createMany: {
@@ -303,7 +299,7 @@ export async function orderRoutes(app: FastifyInstance) {
                     where: {id},
                     data: {
                         ...(customerName && {customerName}),
-                        ...(dueDate && { dueDate: new Date(dueDate)}),
+                        ...(dueDate && { dueDate: toUTCMidnight(dueDate)}),
                     },
                     select: {
                         id: true,

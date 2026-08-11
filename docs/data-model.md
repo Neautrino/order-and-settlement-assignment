@@ -93,7 +93,7 @@ erDiagram
         string userId FK "References User.id"
         string customerName "Client / Customer name"
         OrderStatus status "PENDING | PARTIALLY_PAID | PAID | OVERDUE"
-        bigint totalAmount "Sum of item (quantity * unitPrice) in paise"
+        bigint totalAmount "Sum of item (quantity * unitPrice) in cents"
         datetime dueDate "Payment deadline date"
         datetime createdAt "Creation timestamp"
         datetime updatedAt "Last modification timestamp"
@@ -104,7 +104,7 @@ erDiagram
         string orderId FK "References Order.id"
         string itemName "Description of item/service"
         int quantity "Item count (>= 1)"
-        bigint unitPrice "Price per unit in paise (> 0)"
+        bigint unitPrice "Price per unit in cents (> 0)"
         datetime createdAt "Creation timestamp"
         datetime updatedAt "Last modification timestamp"
     }
@@ -112,7 +112,7 @@ erDiagram
     PAYMENT {
         string id PK "UUID v4"
         string orderId FK "References Order.id"
-        bigint amount "Settlement amount in paise (> 0)"
+        bigint amount "Settlement amount in cents (> 0)"
         string note "Payment description / reference"
         datetime paymentDate "Transaction timestamp"
         datetime createdAt "Creation timestamp"

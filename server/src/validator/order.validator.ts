@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { isUTCPastDate } from "../utils/date-utils"
 
 export const orderItemSchema = z.object({
     itemName: z.string().min(1, "Item name is required"),
@@ -9,19 +10,15 @@ export const orderItemSchema = z.object({
 export const orderSchema = z.object({
     customerName: z.string().min(1, "Customer name is required"),
     dueDate: z.coerce.date({ error: "Invalid ISO due date format"}).refine((date) => {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const targetDate = new Date(date);
-        targetDate.setHours(0,0,0,0)
-        return targetDate > today;
-    }, { message: "Due date cannot be today or in the past"}),
+        return !isUTCPastDate(date);
+    }, { message: "Due date cannot be in the past"}),
     items: z.array(orderItemSchema).min(1, "Order must contain at least 1 item"),
 })
 
 export const orderQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
-    status: z.enum(["PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"]).optional()
+    status: z.enum(["PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"]).optional(),
 })
 
 export const orderParamsSchema = z.object({

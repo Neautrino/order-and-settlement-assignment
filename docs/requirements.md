@@ -39,7 +39,7 @@ The **Order Management & Settlement System** provides a secure, reliable platfor
 
 ### 2.4 Listing, Filtering & Insights
 - **Filtering**: Filter orders by status (`PENDING`, `PARTIALLY_PAID`, `PAID`, `OVERDUE`).
-- **Pagination & Search**: Paginated list queries with support for searching by customer name or order ID.
+- **Pagination**: Paginated list queries supporting page and limit query parameters.
 - **Summary Metrics**: Server-side calculation of `totalAmount`, `totalPaid`, `remainingAmount`, and current order status.
 
 ---
@@ -128,7 +128,8 @@ Dynamic status reconciliation applies the following deterministic rules:
 
 ### 5.4 Due Date Rules
 - Due date comparisons utilize calendar date format (`YYYY-MM-DD`).
-- Orders become `OVERDUE` at `00:00:00` local calendar date following the specified `dueDate`.
+- **UTC Timezone Semantics**: All backend calendar-date operations (storage, validation, and status calculations) operate strictly in **UTC**. `dueDate` inputs are normalized to UTC Midnight (`YYYY-MM-DDT00:00:00.000Z`).
+- Orders become `OVERDUE` at `00:00:00 UTC` calendar date following the specified `dueDate` (e.g. an order due on `2026-08-25` is active through `2026-08-25T23:59:59.999Z` and becomes `OVERDUE` on `2026-08-26T00:00:00.000Z`).
 
 ---
 

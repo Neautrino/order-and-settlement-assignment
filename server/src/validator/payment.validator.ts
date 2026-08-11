@@ -2,7 +2,7 @@ import { z } from "zod"
 
 export const createPaymentSchema = z.object({
     orderId: z.uuid("Invalid order Id format"),
-    amount: z.number().int().positive("Payment amount must be a positive integer in paise"),
+    amount: z.number().int().positive("Payment amount must be a positive integer in cents"),
     note: z.string().optional()
 })
 

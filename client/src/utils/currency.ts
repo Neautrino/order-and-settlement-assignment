@@ -1,5 +1,5 @@
 /**
- * Converts integer cents/paise (e.g. 1250000) to formatted currency string (e.g. "$12,500.00")
+ * Converts integer cents (e.g. 1250000) to formatted currency string (e.g. "$12,500.00")
  */
 export function formatCurrency(cents: number): string {
   const safeCents = isNaN(cents) ? 0 : cents;

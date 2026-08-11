@@ -1,3 +1,5 @@
+import { isDueDateExpiredUTC } from "./date-utils";
+
 export type OrderStatusType = "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE";
 
 export interface OrderStatusInput {
@@ -12,7 +14,7 @@ export function resolveOrderStatus(order: OrderStatusInput): OrderStatusType {
         return "PAID"
     }
 
-    const isExpired = new Date(order.dueDate) < new Date();
+    const isExpired = isDueDateExpiredUTC(order.dueDate);
     if(isExpired){
         return "OVERDUE"
     }

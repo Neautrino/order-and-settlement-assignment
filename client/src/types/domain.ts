@@ -15,7 +15,7 @@ export interface OrderItem {
   id?: string;
   itemName: string;
   quantity: number;
-  unitPrice: number; // In paise/cents
+  unitPrice: number; // In cents
 }
 
 export interface Payment {
