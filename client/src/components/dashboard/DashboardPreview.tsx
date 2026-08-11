@@ -6,9 +6,10 @@ import { MetricCardData } from '../../types/domain';
 
 interface DashboardPreviewProps {
   onActionClick: (action: string) => void;
+  onNavigateDashboard?: () => void;
 }
 
-export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClick }) => {
+export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClick, onNavigateDashboard }) => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [dateRange, setDateRange] = useState('May 1 - May 31, 2024');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -65,7 +66,11 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
                       key={item}
                       onClick={() => {
                         setActiveTab(item);
-                        onActionClick(`Switched to ${item} view`);
+                        if (onNavigateDashboard) {
+                          onNavigateDashboard();
+                        } else {
+                          onActionClick(`Switched to ${item} view`);
+                        }
                       }}
                       className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
                         isActive 
@@ -81,7 +86,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
               </nav>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between px-2 cursor-pointer" onClick={() => onActionClick("Business Profile settings")}>
+            <div className="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between px-2 cursor-pointer" onClick={() => onNavigateDashboard ? onNavigateDashboard() : onActionClick("Business Profile settings")}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs">
                   DP
@@ -164,7 +169,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
             {/* Metric Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {metrics.map((m) => (
-                <StatCard key={m.title} {...m} />
+                <StatCard key={m.title} {...m} onClick={onNavigateDashboard} />
               ))}
             </div>
 

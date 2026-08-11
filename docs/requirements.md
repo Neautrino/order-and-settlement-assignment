@@ -80,6 +80,7 @@ All error responses adhere to a consistent, standard JSON format:
 
 ### 4.2 Assumptions
 - **Currency (USD / Cents)**: All monetary amounts operate strictly under USD currency stored in minor units (cents integers on backend, e.g., $100.50 = 10050 cents).
+- **JWT Token Expiration (24 Hours)**: Authentication JWT access tokens have a fixed validity lifetime of 24 hours. Upon expiration, API calls return `401 Unauthorized`, automatically ending the active session and requiring the user to log in again.
 - **Calendar Due Dates**: `dueDate` is represented as a calendar date (`YYYY-MM-DD`). Time of day is not evaluated for due date calculations to prevent time-of-day edge cases.
 - **Order Immutability Post-Payment**: Once the first payment is recorded against an order (`totalPaid > 0`), modifying or deleting the order is strictly prohibited to preserve financial data integrity.
 - **Multiple Payments**: An order supports multiple partial payments over time until the remaining balance reaches zero.

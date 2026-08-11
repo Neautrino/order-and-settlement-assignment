@@ -10,7 +10,10 @@ import { getStoredUser, logoutUser } from './services/auth.service';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'dashboard'>('landing');
-  const [userEmail, setUserEmail] = useState<string>('admin@dummypay.com');
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    const storedUser = getStoredUser();
+    return storedUser ? storedUser.email : 'admin@dummypay.com';
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -100,30 +103,50 @@ export default function App() {
               handleAction(action);
             }
           }} 
-          onOpenAuth={handleOpenAuth} 
+          onOpenAuth={(mode) => {
+            const token = localStorage.getItem('auth_token');
+            const storedUser = getStoredUser();
+            if (token && storedUser) {
+              setCurrentView('dashboard');
+            } else {
+              handleOpenAuth(mode);
+            }
+          }} 
         />
 
         {/* Hero Banner Section */}
         <HeroSection 
-          onStartFree={() => handleOpenAuth('register')} 
-          onBookDemo={() => handleOpenAuth('register')} 
+          onStartFree={() => {
+            const token = localStorage.getItem('auth_token');
+            const storedUser = getStoredUser();
+            if (token && storedUser) {
+              setCurrentView('dashboard');
+            } else {
+              handleOpenAuth('register');
+            }
+          }} 
+          onBookDemo={() => {
+            const token = localStorage.getItem('auth_token');
+            const storedUser = getStoredUser();
+            if (token && storedUser) {
+              setCurrentView('dashboard');
+            } else {
+              handleOpenAuth('register');
+            }
+          }} 
         />
 
         {/* Floating Glass Dashboard Preview */}
         <div className="relative">
-          <DashboardPreview onActionClick={handleAction} />
-          
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setCurrentView('dashboard')}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-full shadow-lg transition active:scale-95 cursor-pointer flex items-center gap-2"
-            >
-              <span>🚀 Launch Full Interactive Dashboard App</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </button>
-          </div>
+          <DashboardPreview onActionClick={handleAction} onNavigateDashboard={() => {
+            const token = localStorage.getItem('auth_token');
+            const storedUser = getStoredUser();
+            if (token && storedUser) {
+              setCurrentView('dashboard');
+            } else {
+              setCurrentView('login');
+            }
+          }} />
         </div>
 
         {/* System Features Section */}
