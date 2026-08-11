@@ -1,8 +1,19 @@
 import { Order, PaginatedOrdersResponse } from '../types/domain';
 import { apiClient } from './api.client';
 
-export async function fetchOrders(page: number = 1, limit: number = 10): Promise<PaginatedOrdersResponse> {
-  return apiClient<PaginatedOrdersResponse>(`/api/orders?page=${page}&limit=${limit}`);
+export async function fetchOrders(
+  page: number = 1,
+  limit: number = 10,
+  status?: string
+): Promise<PaginatedOrdersResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (status && status !== 'ALL') {
+    params.append('status', status);
+  }
+  return apiClient<PaginatedOrdersResponse>(`/api/orders?${params.toString()}`);
 }
 
 export async function fetchOrderById(id: string): Promise<Order> {

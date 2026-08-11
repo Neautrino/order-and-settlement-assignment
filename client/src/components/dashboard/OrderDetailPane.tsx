@@ -84,9 +84,18 @@ export const OrderDetailPane: React.FC<OrderDetailPaneProps> = ({
           <p className="text-[11px] font-mono text-slate-400 mt-0.5 select-all break-all truncate transition-all duration-700" title={order.id}>
             <span className="font-semibold text-slate-400/80">ID:</span> {order.id}
           </p>
-          <p className="text-xs text-slate-500 font-medium mt-1 truncate transition-all duration-700">
-            Created on {order.createdAt?.split('T')[0]} • Due {order.dueDate?.split('T')[0]}
-          </p>
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1.5 flex-wrap transition-all duration-700">
+            <span>Created on {order.createdAt?.split('T')[0]}</span>
+            <span>•</span>
+            <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md text-[11px] ${
+              order.status === 'OVERDUE'
+                ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                : 'bg-amber-50 text-amber-800 border border-amber-200/80'
+            }`}>
+              <span>📅</span>
+              <span>Due {order.dueDate?.split('T')[0]}</span>
+            </span>
+          </div>
         </div>
       </div>
 

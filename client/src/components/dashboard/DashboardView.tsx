@@ -72,7 +72,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
 
     try {
-      const res = await fetchOrders(pageToLoad, 10);
+      const res = await fetchOrders(pageToLoad, 10, selectedStatusFilter);
       const newOrders = res.data || [];
       const paginationMeta = res.pagination;
 
@@ -108,7 +108,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   useEffect(() => {
     loadOrdersFromApi(1, false);
-  }, []);
+  }, [selectedStatusFilter]);
 
   const handleLoadMore = () => {
     if (!hasMore || isLoadingMore) return;

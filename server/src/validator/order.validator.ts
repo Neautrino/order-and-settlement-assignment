@@ -21,6 +21,7 @@ export const orderSchema = z.object({
 export const orderQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
+    status: z.enum(["PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"]).optional()
 })
 
 export const orderParamsSchema = z.object({

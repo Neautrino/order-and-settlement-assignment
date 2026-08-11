@@ -118,7 +118,20 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
         </div>
 
         {/* Order Balance Summary — matches the dark banner from Create/Edit modals */}
-        <div className="bg-slate-900 text-white p-4 rounded-2xl">
+        <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-xs pb-2.5 border-b border-slate-800">
+            <span className="text-slate-400 font-medium">Payment Deadline</span>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+              order.status === 'OVERDUE'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+            }`}>
+              <span>📅</span>
+              <span>Due: {order.dueDate?.split('T')[0]}</span>
+              {order.status === 'OVERDUE' && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Overdue</span>}
+            </span>
+          </div>
+
           {isCalculating ? (
             <div className="flex items-center justify-center gap-2 py-1">
               <svg className="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none">

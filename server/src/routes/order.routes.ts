@@ -72,16 +72,24 @@ export async function orderRoutes(app: FastifyInstance) {
         schema: { querystring: orderQuerySchema }
     }, async (request, reply) => {
 
-        const { page, limit } = request.query;
+        const { page, limit, status } = request.query;
         const skip = (page - 1) * limit;
+        
+        const whereClause: { userId: string; status?: "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE"} = {
+            userId: request.user.id
+        }
+
+        if(status) {
+            whereClause.status = status;
+        }
 
         const [totalOrders, orders] = await Promise.all([
             prisma.order.count({
-                where: {userId: request.user.id}
+                where: whereClause
             }), 
 
             prisma.order.findMany({
-                where: {userId: request.user.id},
+                where: whereClause,
                 skip,
                 take: limit,
                 include: { 
