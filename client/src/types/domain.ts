@@ -35,3 +35,17 @@ export interface MetricCardData {
   isPositive: boolean;
   type: 'balance' | 'revenue' | 'expenses' | 'profit';
 }
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  totalOrders: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedOrdersResponse {
+  data: Order[];
+  pagination: PaginationMeta;
+}
+

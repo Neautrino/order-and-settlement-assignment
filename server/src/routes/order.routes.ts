@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { authenticate } from "../lib/middleware";
-import { orderParamsSchema, orderSchema, updateOrderSchema } from "../validator/order.validator";
+import { orderParamsSchema, orderQuerySchema, orderSchema, updateOrderSchema } from "../validator/order.validator";
 import { prisma } from "../lib/prisma";
 import { HTTP_STATUS } from "../constants/http-status";
 import { resolveOrderStatus } from "../utils/status-calc";
@@ -56,23 +56,37 @@ export async function orderRoutes(app: FastifyInstance) {
 
     fastify.get("/", {
         onRequest: [authenticate],
+        schema: { querystring: orderQuerySchema }
     }, async (request, reply) => {
-        const orders = await prisma.order.findMany({
-            where: {userId: request.user.id},
-            include: { 
-                items: true,
-                payments: {
-                    select: {
-                        id: true,
-                        amount: true,
-                        note: true,
-                        paymentDate: true,
-                    },
-                    orderBy: { paymentDate: "desc" }
-                }
-            },
-            orderBy: { createdAt: "desc" },
-        })
+
+        const { page, limit } = request.query;
+        const skip = (page - 1) * limit;
+
+        const [totalOrders, orders] = await Promise.all([
+            prisma.order.count({
+                where: {userId: request.user.id}
+            }), 
+
+            prisma.order.findMany({
+                where: {userId: request.user.id},
+                skip,
+                take: limit,
+                include: { 
+                    items: true,
+                    payments: {
+                        select: {
+                            id: true,
+                            amount: true,
+                            note: true,
+                            paymentDate: true,
+                        },
+                        orderBy: { paymentDate: "desc" }
+                    }
+                },
+                orderBy: { createdAt: "asc" },
+            })
+        ])
+        
 
         const statusChangedIds: string[] = [];
 
@@ -111,8 +125,20 @@ export async function orderRoutes(app: FastifyInstance) {
                 data: { status: "OVERDUE" }
             }).catch(err => request.log.error(err, "Failed background status sync"))
         }
+
+        const totalPages = Math.ceil(totalOrders / limit)
+        const hasMore = page < totalPages
         
-        return reply.status(HTTP_STATUS.OK).send(formattedOrders)
+        return reply.status(HTTP_STATUS.OK).send({
+            data: formattedOrders,
+            pagination: {
+                page,
+                limit,
+                totalOrders,
+                totalPages,
+                hasMore
+            }
+        })
     })
 
     fastify.get("/:id", {

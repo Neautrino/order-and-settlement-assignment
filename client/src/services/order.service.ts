@@ -1,8 +1,8 @@
-import { Order } from '../types/domain';
+import { Order, PaginatedOrdersResponse } from '../types/domain';
 import { apiClient } from './api.client';
 
-export async function fetchOrders(): Promise<Order[]> {
-  return apiClient<Order[]>('/api/orders');
+export async function fetchOrders(page: number = 1, limit: number = 10): Promise<PaginatedOrdersResponse> {
+  return apiClient<PaginatedOrdersResponse>(`/api/orders?page=${page}&limit=${limit}`);
 }
 
 export async function fetchOrderById(id: string): Promise<Order> {

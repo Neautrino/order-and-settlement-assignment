@@ -34,6 +34,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   // Modals & Active Selected Order Workspace State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -48,19 +51,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setTimeout(() => setAlertMsg(null), 3500);
   };
 
-  const loadOrdersFromApi = async (selectOrderId?: string) => {
-    setIsLoading(true);
-    try {
-      const data = await fetchOrders();
-      setOrders(data);
+  const loadOrdersFromApi = async (
+    pageOrOrderId: number | string = 1,
+    isAppend = false,
+    selectOrderId?: string
+  ) => {
+    let pageToLoad = 1;
+    let targetSelectId = selectOrderId;
 
-      const targetId = selectOrderId || viewingOrder?.id || (data.length > 0 ? data[0].id : null);
+    if (typeof pageOrOrderId === 'string') {
+      targetSelectId = pageOrOrderId;
+    } else if (typeof pageOrOrderId === 'number') {
+      pageToLoad = pageOrOrderId;
+    }
+
+    if (isAppend) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
+
+    try {
+      const res = await fetchOrders(pageToLoad, 10);
+      const newOrders = res.data || [];
+      const paginationMeta = res.pagination;
+
+      const currentList = isAppend ? [...orders, ...newOrders] : newOrders;
+      if (isAppend) {
+        setOrders((prev) => [...prev, ...newOrders]);
+      } else {
+        setOrders(newOrders);
+      }
+
+      setPage(paginationMeta?.page || pageToLoad);
+      setHasMore(!!paginationMeta?.hasMore);
+
+      const targetId = targetSelectId || viewingOrder?.id || (currentList.length > 0 ? currentList[0].id : null);
       if (targetId) {
         try {
           const detail = await fetchOrderById(targetId);
           setViewingOrder(detail);
         } catch {
-          const found = data.find((o) => o.id === targetId);
+          const found = currentList.find((o) => o.id === targetId);
           if (found) setViewingOrder(found);
         }
       } else {
@@ -70,12 +102,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       console.warn('Backend API connection falling back to client state:', err.message);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    loadOrdersFromApi();
+    loadOrdersFromApi(1, false);
   }, []);
+
+  const handleLoadMore = () => {
+    if (!hasMore || isLoadingMore) return;
+    loadOrdersFromApi(page + 1, true);
+  };
+
 
   const handleSelectOrderRow = async (order: Order) => {
     setViewingOrder(order);
@@ -314,6 +353,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               orders={filteredOrders}
               viewingOrderId={viewingOrder?.id}
               isLoading={isLoading}
+              isLoadingMore={isLoadingMore}
+              hasMore={hasMore}
+              onLoadMore={handleLoadMore}
               onSelectOrder={handleSelectOrderRow}
               getDisplayOrderId={getDisplayOrderId}
             />
