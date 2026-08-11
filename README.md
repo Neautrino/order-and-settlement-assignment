@@ -2,6 +2,13 @@
 
 A production-oriented implementation of a multi-tenant Order Management and Payment Settlement platform engineered for financial data integrity, strict user isolation, and high-concurrency transaction processing.
 
+
+---
+
+## 🔗 Live Demo / Deployment
+
+- **Live Application**: [https://dummypay.vercel.app/](https://dummypay.vercel.app/)
+
 ---
 
 ## 🌟 Key Highlights & Architectural Strengths
