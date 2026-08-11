@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#C084FC" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background Card with Smooth Rounded Corners -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bgGrad)" filter="url(#shadow)" />
+  <rect x="32" y="32" width="448" height="448" rx="112" stroke="#334155" stroke-width="8" opacity="0.6" />
+
+  <!-- Cube / Box isometric geometry -->
+  <!-- Top Face -->
+  <path d="M256 128 L376 188 L256 248 L136 188 Z" fill="url(#accentGrad)" opacity="0.9" />
+
+  <!-- Right Face -->
+  <path d="M256 248 L376 188 L376 324 L256 384 Z" fill="url(#accentGrad)" />
+
+  <!-- Left Face -->
+  <path d="M256 248 L136 188 L136 324 L256 384 Z" fill="#0284C7" opacity="0.75" />
+
+  <!-- Inner Settlement / Check Accent Overlay -->
+  <path d="M220 280 L248 308 L304 244" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
