@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { connectDb } from "./lib/prisma";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import fastifyJwt from "@fastify/jwt";
+import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth.routes";
 import { orderRoutes } from "./routes/order.routes";
@@ -42,6 +43,12 @@ await fastify.register(fastifyRateLimit, {
       details: { expiresIn: context.after}
     }
   })
+})
+
+await fastify.register(fastifyCors, {
+  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  credentials: true
 })
 
 fastify.get('/', async (request, reply) => {
