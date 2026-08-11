@@ -24,8 +24,12 @@ export const FeaturesSection: React.FC = () => {
 
   return (
     <section className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-      {features.map((f) => (
-        <div key={f.step} className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-white/80 shadow-sm hover:shadow-md transition">
+      {features.map((f, idx) => (
+        <div 
+          key={f.step} 
+          className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-white/80 shadow-sm hover:shadow-md transition animate-fade-in-up"
+          style={{ animationDelay: `${idx * 0.12 + 0.2}s` }}
+        >
           <div className={`w-10 h-10 ${f.badgeColor} rounded-xl flex items-center justify-center mb-4 font-bold text-sm`}>
             {f.step}
           </div>

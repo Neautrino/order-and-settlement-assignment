@@ -32,15 +32,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onActionClick, onOpenAuth }) => 
         </div>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-          <button onClick={() => handleNavClick("Product Navigation")} className="flex items-center gap-1 hover:text-slate-900 transition">
+        <nav className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
+          <button onClick={() => handleNavClick("Product Navigation")} className="flex items-center gap-1 px-3 py-1.5 rounded-full hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95">
             Product
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
           </button>
-          <button onClick={() => handleNavClick("Solutions Navigation")} className="hover:text-slate-900 transition">Solutions</button>
-          <button onClick={() => handleNavClick("Pricing Navigation")} className="hover:text-slate-900 transition">Pricing</button>
-          <button onClick={() => handleNavClick("Docs Navigation")} className="hover:text-slate-900 transition">Docs</button>
-          <button onClick={() => handleNavClick("Resources Navigation")} className="flex items-center gap-1 hover:text-slate-900 transition">
+          <button onClick={() => handleNavClick("Solutions Navigation")} className="px-3 py-1.5 rounded-full hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95">Solutions</button>
+          <button onClick={() => handleNavClick("Pricing Navigation")} className="px-3 py-1.5 rounded-full hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95">Pricing</button>
+          <button onClick={() => handleNavClick("Docs Navigation")} className="px-3 py-1.5 rounded-full hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95">Docs</button>
+          <button onClick={() => handleNavClick("Resources Navigation")} className="flex items-center gap-1 px-3 py-1.5 rounded-full hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95">
             Resources
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
           </button>
@@ -51,13 +51,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onActionClick, onOpenAuth }) => 
           <div className="hidden sm:flex items-center gap-3">
             <button 
               onClick={() => handleAuthClick('login')} 
-              className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 transition cursor-pointer"
+              className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-full hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95"
             >
               Sign In
             </button>
             <button 
               onClick={() => handleAuthClick('register')} 
-              className="text-xs sm:text-sm font-bold bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-sm hover:shadow hover:bg-slate-800 active:scale-95 transition cursor-pointer"
+              className="text-xs sm:text-sm font-bold bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-sm hover:shadow-md hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
             >
               Get Started
             </button>
@@ -87,11 +87,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onActionClick, onOpenAuth }) => 
       {isMobileMenuOpen && (
         <div className="md:hidden mt-2 p-4 rounded-3xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col space-y-2 text-sm font-semibold text-slate-700 pb-3 border-b border-slate-100">
-            <button onClick={() => handleNavClick("Product Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition">Product</button>
-            <button onClick={() => handleNavClick("Solutions Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition">Solutions</button>
-            <button onClick={() => handleNavClick("Pricing Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition">Pricing</button>
-            <button onClick={() => handleNavClick("Docs Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition">Docs</button>
-            <button onClick={() => handleNavClick("Resources Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition">Resources</button>
+            <button onClick={() => handleNavClick("Product Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">Product</button>
+            <button onClick={() => handleNavClick("Solutions Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">Solutions</button>
+            <button onClick={() => handleNavClick("Pricing Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">Pricing</button>
+            <button onClick={() => handleNavClick("Docs Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">Docs</button>
+            <button onClick={() => handleNavClick("Resources Navigation")} className="text-left px-3 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">Resources</button>
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-1">

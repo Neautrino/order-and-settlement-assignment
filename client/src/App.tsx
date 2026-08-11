@@ -99,6 +99,10 @@ export default function App() {
           onActionClick={(action) => {
             if (action === "Dashboard Access") {
               setCurrentView('dashboard');
+            } else if (action.includes("Product")) {
+              document.getElementById('dashboard-preview')?.scrollIntoView({ behavior: 'smooth' });
+            } else if (action.includes("Solutions") || action.includes("Pricing") || action.includes("Docs")) {
+              document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
             } else {
               handleAction(action);
             }
@@ -137,20 +141,14 @@ export default function App() {
         />
 
         {/* Floating Glass Dashboard Preview */}
-        <div className="relative">
-          <DashboardPreview onActionClick={handleAction} onNavigateDashboard={() => {
-            const token = localStorage.getItem('auth_token');
-            const storedUser = getStoredUser();
-            if (token && storedUser) {
-              setCurrentView('dashboard');
-            } else {
-              setCurrentView('login');
-            }
-          }} />
+        <div id="dashboard-preview" className="relative scroll-mt-8">
+          <DashboardPreview onActionClick={handleAction} />
         </div>
 
         {/* System Features Section */}
-        <FeaturesSection />
+        <div id="features" className="scroll-mt-8">
+          <FeaturesSection />
+        </div>
 
       </div>
     </div>

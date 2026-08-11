@@ -3,9 +3,10 @@ import { MetricCardData } from '../../types/domain';
 
 interface StatCardProps extends MetricCardData {
   onClick?: () => void;
+  index?: number;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPositive, type, onClick }) => {
+export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPositive, type, onClick, index = 0 }) => {
   // 10 data points per sparkline matching screenshot
   const sparklineData = {
     balance: [
@@ -43,7 +44,8 @@ export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPos
   return (
     <div 
       onClick={onClick}
-      className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between h-36 cursor-pointer active:scale-98"
+      className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between h-36 cursor-pointer active:scale-98 animate-fade-in-up"
+      style={{ animationDelay: `${index * 0.08}s` }}
     >
       <div>
         <p className="text-xs font-medium text-slate-500">{title}</p>
@@ -59,8 +61,8 @@ export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPos
         </div>
       </div>
 
-      {/* Sparkline matching screenshot (purple multi-point line + dots + area fill) */}
-      <div className="w-full h-9 mt-1 overflow-hidden">
+      {/* Sparkline matching screenshot (purple multi-point line + dots + area fill) growing from left to right */}
+      <div className="w-full h-9 mt-1 overflow-hidden animate-chart-grow-right" style={{ animationDelay: `${index * 0.1 + 0.2}s` }}>
         <svg className="w-full h-full overflow-visible" viewBox="0 0 100 30" preserveAspectRatio="none">
           <defs>
             <linearGradient id={`grad-${type}`} x1="0" y1="0" x2="0" y2="1">
@@ -101,3 +103,4 @@ export const StatCard: React.FC<StatCardProps> = ({ title, amount, change, isPos
     </div>
   );
 };
+

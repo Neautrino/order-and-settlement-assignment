@@ -30,7 +30,7 @@ export const CashFlowChart: React.FC = () => {
   const svgPathD = "M 6.25 55 L 18.75 35 L 31.25 70 L 43.75 25 L 56.25 45 L 68.75 38 L 81.25 30 L 93.75 48";
 
   return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col justify-between">
+    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col justify-between animate-fade-in-up">
       {/* Header with fixed non-wrapping legend */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
@@ -77,12 +77,12 @@ export const CashFlowChart: React.FC = () => {
               <div key={month} className="flex-1 flex flex-col items-center gap-1 group cursor-pointer">
                 <div className="w-full flex items-end justify-center gap-1 h-36">
                   <div 
-                    className="w-2.5 sm:w-3 bg-indigo-600 rounded-t-sm transition-all duration-300 group-hover:bg-indigo-700 shadow-sm" 
-                    style={{ height: `${bars[idx].in}%` }}
+                    className="w-2.5 sm:w-3 bg-indigo-600 rounded-t-sm transition-colors duration-300 group-hover:bg-indigo-700 shadow-sm animate-bar-grow" 
+                    style={{ height: `${bars[idx].in}%`, animationDelay: `${idx * 0.07 + 0.1}s` }}
                   />
                   <div 
-                    className="w-2.5 sm:w-3 bg-purple-300 rounded-t-sm transition-all duration-300 group-hover:bg-purple-400" 
-                    style={{ height: `${bars[idx].out}%` }}
+                    className="w-2.5 sm:w-3 bg-purple-300 rounded-t-sm transition-colors duration-300 group-hover:bg-purple-400 animate-bar-grow" 
+                    style={{ height: `${bars[idx].out}%`, animationDelay: `${idx * 0.07 + 0.15}s` }}
                   />
                 </div>
                 <span className="text-[11px] font-medium text-slate-400 group-hover:text-slate-900 transition">{month}</span>
@@ -90,8 +90,8 @@ export const CashFlowChart: React.FC = () => {
             ))}
           </div>
 
-          {/* SVG Line Overlay for Trend Line */}
-          <div className="absolute inset-0 h-44 pointer-events-none z-20">
+          {/* SVG Line Overlay for Trend Line (grows from left to right) */}
+          <div className="absolute inset-0 h-44 pointer-events-none z-20 animate-chart-grow-right" style={{ animationDelay: '0.3s' }}>
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
               <path
                 d={svgPathD}
@@ -108,8 +108,8 @@ export const CashFlowChart: React.FC = () => {
             {points.map((pt, idx) => (
               <div
                 key={idx}
-                className="absolute w-2.5 h-2.5 bg-slate-900 rounded-full border-2 border-white -translate-x-1/2 -translate-y-1/2 shadow-sm"
-                style={{ left: pt.left, top: pt.top }}
+                className="absolute w-2.5 h-2.5 bg-slate-900 rounded-full border-2 border-white shadow-sm animate-dot-pop"
+                style={{ left: pt.left, top: pt.top, animationDelay: `${idx * 0.1 + 0.4}s` }}
               />
             ))}
           </div>
@@ -119,3 +119,4 @@ export const CashFlowChart: React.FC = () => {
     </div>
   );
 };
+

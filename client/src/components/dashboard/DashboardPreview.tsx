@@ -5,12 +5,11 @@ import { ExpenseDonutChart } from './ExpenseDonutChart';
 import { MetricCardData } from '../../types/domain';
 
 interface DashboardPreviewProps {
-  onActionClick: (action: string) => void;
+  onActionClick?: (action: string) => void;
   onNavigateDashboard?: () => void;
 }
 
 export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClick, onNavigateDashboard }) => {
-  const [activeTab, setActiveTab] = useState('Overview');
   const [dateRange, setDateRange] = useState('May 1 - May 31, 2024');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,22 +59,16 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
 
               <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
                 {navItems.map((item) => {
-                  const isActive = activeTab === item;
+                  const isActive = item === 'Overview';
                   return (
                     <button
                       key={item}
-                      onClick={() => {
-                        setActiveTab(item);
-                        if (onNavigateDashboard) {
-                          onNavigateDashboard();
-                        } else {
-                          onActionClick(`Switched to ${item} view`);
-                        }
-                      }}
-                      className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition shrink-0 whitespace-nowrap lg:w-full ${
+                      type="button"
+                      onClick={() => {}}
+                      className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all shrink-0 whitespace-nowrap lg:w-full cursor-pointer ${
                         isActive 
                           ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60 font-semibold' 
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-xs active:scale-98'
                       }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-indigo-600' : 'bg-slate-300'}`} />
@@ -86,7 +79,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
               </nav>
             </div>
 
-            <div className="hidden lg:flex mt-8 pt-4 border-t border-slate-200/60 items-center justify-between px-2 cursor-pointer" onClick={() => onNavigateDashboard ? onNavigateDashboard() : onActionClick("Business Profile settings")}>
+            <div className="hidden lg:flex mt-8 pt-4 border-t border-slate-200/60 items-center justify-between px-2 cursor-pointer hover:bg-white/60 p-2 rounded-xl transition-all">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-xs">
                   DP
@@ -144,7 +137,7 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
                           onClick={() => {
                             setDateRange(option);
                             setIsDropdownOpen(false);
-                            onActionClick(`Date range changed to ${option}`);
+                            if (onActionClick) onActionClick(`Date range changed to ${option}`);
                           }}
                           className={`w-full text-left px-4 py-2 text-xs font-medium flex items-center justify-between transition ${
                             isSelected 
@@ -168,8 +161,8 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
 
             {/* Metric Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {metrics.map((m) => (
-                <StatCard key={m.title} {...m} onClick={onNavigateDashboard} />
+              {metrics.map((m, idx) => (
+                <StatCard key={m.title} {...m} index={idx} />
               ))}
             </div>
 
@@ -189,3 +182,5 @@ export const DashboardPreview: React.FC<DashboardPreviewProps> = ({ onActionClic
     </section>
   );
 };
+
+
