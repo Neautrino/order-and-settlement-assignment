@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { connectDb } from "./lib/prisma";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import fastifyJwt from "@fastify/jwt";
+import fastifyRateLimit from "@fastify/rate-limit";
 import { authRoutes } from "./routes/auth.routes";
 import { orderRoutes } from "./routes/order.routes";
 import { paymentRoutes } from "./routes/payment.routes";
@@ -20,6 +21,25 @@ fastify.register(fastifyJwt, {
   sign: {
     expiresIn: "24h"
   }
+})
+
+await fastify.register(fastifyRateLimit, {
+  max: 500,
+  timeWindow: "15 minutes",
+  hook: "preHandler",
+  keyGenerator: (request) => {
+    if(request.user && (request.user as any).id){
+      return `user:${(request.user as any).id}`
+    }
+    return `ip:${request.ip}`
+  },
+  errorResponseBuilder: (request, context) => ({
+    statusCode: 429,
+    error: "Too Many Requests",
+    message: `Rate limit exceeded. Try again in ${context.after}`,
+    date: new Date().toISOString(),
+    expiresIn: context.after
+  })
 })
 
 fastify.get('/', async (request, reply) => {

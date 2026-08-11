@@ -15,6 +15,12 @@ export async function orderRoutes(app: FastifyInstance) {
     const fastify = app.withTypeProvider<ZodTypeProvider>();
 
     fastify.post( "/", {
+        config: {
+            rateLimit: {
+                max: 30,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: {body: orderSchema},
     }, async (request, reply ) => {
@@ -54,7 +60,14 @@ export async function orderRoutes(app: FastifyInstance) {
         })
     })
 
+    
     fastify.get("/", {
+        config: {
+            rateLimit: {
+                max: 60,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: { querystring: orderQuerySchema }
     }, async (request, reply) => {
@@ -142,6 +155,12 @@ export async function orderRoutes(app: FastifyInstance) {
     })
 
     fastify.get("/:id", {
+        config: {
+            rateLimit: {
+                max: 60,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: { params: orderParamsSchema}
     }, async( request, reply) => {
@@ -202,6 +221,12 @@ export async function orderRoutes(app: FastifyInstance) {
     })
 
     fastify.patch("/:id", {
+        config: {
+            rateLimit: {
+                max: 30,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: {
             params: orderParamsSchema,
@@ -305,6 +330,12 @@ export async function orderRoutes(app: FastifyInstance) {
     })
 
     fastify.delete("/:id", {
+        config: {
+            rateLimit: {
+                max: 30,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: { params: orderParamsSchema}
     }, async ( request, reply) => {

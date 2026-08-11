@@ -9,6 +9,7 @@ Welcome to the **Order & Settlements API** documentation. This document provides
 ## 📋 Table of Contents
 - [Architecture & Overview](#-architecture--overview)
 - [Authentication](#-authentication)
+- [Rate Limiting](#-rate-limiting)
 - [Error Handling](#-error-handling)
 - [API Endpoints](#-api-endpoints)
   - [Authentication API (`/api/auth`)](#1-authentication-api-apiauth)
@@ -51,6 +52,44 @@ The API uses **JWT (JSON Web Tokens)** for authentication.
 
 ---
 
+## ⏱ Rate Limiting
+
+The API implements dynamic rate limiting using `@fastify/rate-limit` to prevent brute force attacks, resource abuse, and service degradation.
+
+### Limit Tracking Strategies
+- **Authenticated Requests**: Rate limits are keyed by **User ID** (`user:<userId>`). Each user receives an independent request quota regardless of their IP or network setup.
+- **Unauthenticated Requests**: Rate limits are keyed by **IP Address** (`ip:<clientIp>`).
+
+### Endpoint Limit Summary
+
+| Category | Endpoint(s) | Limit | Window | Keying Strategy |
+| :--- | :--- | :--- | :--- | :--- |
+| **Authentication** | `POST /api/auth/login`, `POST /api/auth/register` | `5` | 15 minutes | IP Address |
+| **Payment Processing** | `POST /api/payments` | `10` | 1 minute | User ID |
+| **Order Mutations** | `POST /api/orders`, `PATCH /api/orders/:id`, `DELETE /api/orders/:id` | `30` | 1 minute | User ID |
+| **Read Queries** | `GET /api/orders`, `GET /api/orders/:id`, `GET /api/payments/calculate/:orderId` | `60` | 1 minute | User ID |
+| **Global Fallback** | All API routes | `500` | 15 minutes | User ID / IP Address |
+
+### Rate Limit Response Headers
+Every response includes headers detailing the current rate limit status:
+- `x-ratelimit-limit`: Maximum number of requests allowed in the current window.
+- `x-ratelimit-remaining`: Remaining request quota in the current window.
+- `x-ratelimit-reset`: Unix timestamp (in seconds) when the limit resets.
+
+### Exceeded Quota Response (`429 Too Many Requests`)
+When request limits are exceeded, the API responds with HTTP Status `429`:
+```json
+{
+  "statusCode": 429,
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Try again in 15 minutes",
+  "date": "2026-08-11T08:42:00.000Z",
+  "expiresIn": 900
+}
+```
+
+---
+
 ## ⚠️ Error Handling
 
 The API returns standard HTTP status codes along with descriptive JSON error payloads:
@@ -68,6 +107,7 @@ The API returns standard HTTP status codes along with descriptive JSON error pay
 | **`400 Bad Request`** | Validation failure or business logic violation | Invalid body, past due date, attempting overpayment, updating order with payments |
 | **`401 Unauthorized`** | Authentication missing or invalid | Missing/expired JWT token or invalid login credentials |
 | **`404 Not Found`** | Resource not found | Requesting an order that does not exist or does not belong to the user |
+| **`429 Too Many Requests`** | Rate limit exceeded | Sending too many requests within a specified time window |
 | **`500 Internal Server Error`** | Unhandled server error | Internal server crash or unhandled database issue |
 
 ---

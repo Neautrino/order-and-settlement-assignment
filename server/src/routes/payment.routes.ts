@@ -15,6 +15,12 @@ export async function paymentRoutes(app: FastifyInstance) {
     const fastify = app.withTypeProvider<ZodTypeProvider>();
 
     fastify.get("/calculate/:orderId", {
+        config: {
+            rateLimit: {
+                max: 60,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: {params: paymentOrderParamSchema}
     }, async(request, reply) => {
@@ -38,6 +44,12 @@ export async function paymentRoutes(app: FastifyInstance) {
     })
 
     fastify.post("/", {
+        config: {
+            rateLimit: {
+                max: 10,
+                timeWindow: "1 minute"
+            }
+        },
         onRequest: [authenticate],
         schema: { body: createPaymentSchema}
     }, async ( request, reply) => {
