@@ -53,3 +53,20 @@ export async function recordPayment(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export async function calculateOrderBalance(orderId: string): Promise<{
+  orderId: string;
+  status: string;
+  totalAmount: number;
+  totalPaid: number;
+  remainingAmount: number;
+}> {
+  return apiClient<{
+    orderId: string;
+    status: string;
+    totalAmount: number;
+    totalPaid: number;
+    remainingAmount: number;
+  }>(`/api/payments/calculate/${orderId}`);
+}
+

@@ -138,7 +138,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         })),
       });
 
-      showAlert(`Order #${created.id} created successfully!`);
+      showAlert(`Order for ${newOrderData.customerName} created successfully!`);
       await loadOrdersFromApi(created.id);
     } catch (err: any) {
       // Fallback to local state creation if offline / demo mode
@@ -164,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       setOrders([newOrder, ...orders]);
       setViewingOrder(newOrder);
-      showAlert(`Order ${newOrder.id} created successfully!`);
+      showAlert(`Order for ${newOrderData.customerName} created successfully!`);
     }
   };
 
@@ -183,7 +183,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         })),
       });
 
-      showAlert(`Order #${orderId} updated successfully!`);
+      const displayId = getDisplayOrderId(orderId);
+      showAlert(`Order ${displayId} updated successfully!`);
       await loadOrdersFromApi(updated.id);
     } catch (err: any) {
       showAlert(err.message || 'Cannot update order', 'error');
@@ -252,7 +253,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         note,
       });
 
-      showAlert(`Recorded payment of ${formatCurrency(paymentAmountCents)} against ${orderId}`);
+      const customerName = orders.find(o => o.id === orderId)?.customerName || 'order';
+      showAlert(`Recorded payment of ${formatCurrency(paymentAmountCents)} for ${customerName}`);
       await loadOrdersFromApi(orderId);
     } catch (err: any) {
       showAlert(err.message || 'Failed to record payment', 'error');
